@@ -1,0 +1,46 @@
+# --- .NET ---
+bin/
+obj/
+out/
+*.user
+*.suo
+*.userprefs
+*.log
+*.tlog
+*.opendb
+*.VC.db
+.vs/
+.vscode/
+.idea/
+
+# EF Core
+*.mdf
+*.ldf
+*.ndf
+
+# --- Publish ---
+publish/
+*.pubxml.user
+PublishProfiles/*.user
+
+# --- Secrets ---
+appsettings.Production.json
+appsettings.Local.json
+secrets.json
+*.pfx
+*.snk
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Node (por si en fase 2 aparece frontend con npm) ---
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# --- Coverage ---
+coverage/
+TestResults/
+*.trx

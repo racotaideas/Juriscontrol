@@ -1,0 +1,71 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  WEB_PROJECT: src/JurisControl.Web/JurisControl.Web.csproj
+  PUBLISH_DIR: publish
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity minimal
+
+      - name: Publish
+        run: dotnet publish ${{ env.WEB_PROJECT }} --configuration Release --no-build --output ${{ env.PUBLISH_DIR }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-publish
+          path: ${{ env.PUBLISH_DIR }}
+          retention-days: 5
+
+  deploy:
+    needs: build
+    runs-on: windows-latest
+    if: github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-publish
+          path: publish
+
+      - name: Web Deploy to SmartASP.NET
+        uses: rasmusbuchholdt/simply-web-deploy@2.1.0
+        with:
+          website-name: ${{ secrets.SMARTASP_WEBSITE_NAME }}
+          server-computer-name: ${{ secrets.SMARTASP_SERVER }}
+          server-username: ${{ secrets.SMARTASP_USERNAME }}
+          server-password: ${{ secrets.SMARTASP_PASSWORD }}
+          source-path: publish
+
+# Secrets requeridos (Settings → Secrets and variables → Actions):
+#   SMARTASP_WEBSITE_NAME    ej. juriscontrol
+#   SMARTASP_SERVER          ej. https://win8153.site4now.net:8172/msdeploy.axd
+#   SMARTASP_USERNAME        del panel Web Deploy
+#   SMARTASP_PASSWORD        del panel Web Deploy
+#
+# Environment Variables del sitio (panel de SmartASP.NET):
+#   ConnectionStrings__DefaultConnection = Server=sql8006.site4now.net; Database=db_a81e28_juriscontrol35; User Id=db_a81e28_juriscontrol35_admin; Password=<contrasena>; TrustServerCertificate=True

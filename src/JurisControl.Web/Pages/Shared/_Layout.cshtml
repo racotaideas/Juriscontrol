@@ -1,0 +1,46 @@
+@using System.Security.Claims
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · JurisControl</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="app-body">
+    <header class="app-topbar">
+        <div class="app-topbar-inner">
+            <a class="app-brand" asp-page="/Index">
+                <div class="brand-mark">JC</div>
+                <span class="brand-name">Juris<b>Control</b></span>
+            </a>
+            <nav class="app-nav">
+                <a asp-page="/Index" class="app-nav-link">Inicio</a>
+                <a class="app-nav-link disabled" title="Próximamente">Asuntos</a>
+                <a class="app-nav-link disabled" title="Próximamente">Juicios</a>
+                <a class="app-nav-link disabled" title="Próximamente">Clientes</a>
+                <a class="app-nav-link disabled" title="Próximamente">Agenda</a>
+            </nav>
+            <div class="app-user">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <span class="app-user-name">@User.Identity.Name</span>
+                    <form method="post" asp-page="/Account/Logout" class="d-inline">
+                        <button type="submit" class="btn btn-ghost">Salir</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </header>
+
+    <main class="app-main">
+        @RenderBody()
+    </main>
+
+    <footer class="app-footer">
+        &copy; 2026 Racota Ideas · JurisControl v2 · Fase 0
+    </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,6 @@
+@JurisControl.Api_HostAddress = http://localhost:5110
+
+GET {{JurisControl.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

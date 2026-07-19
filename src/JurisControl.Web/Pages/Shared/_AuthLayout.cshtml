@@ -1,0 +1,27 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] · JurisControl</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+    <main class="auth-shell">
+        <div class="auth-brand">
+            <div class="brand-mark">JC</div>
+            <span class="brand-name">Juris<b>Control</b></span>
+        </div>
+        <section class="auth-card">
+            @RenderBody()
+        </section>
+        <footer class="auth-footer">
+            Rafael Corona · JurisControl v2 · Racota Ideas
+        </footer>
+    </main>
+    <partial name="_ValidationScriptsPartial" />
+</body>
+</html>
