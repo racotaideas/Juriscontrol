@@ -1,0 +1,118 @@
+@page "{id:guid}"
+@model JurisControl.Web.Pages.Asuntos.DetailsModel
+@using JurisControl.Domain.Enums
+@{
+    var a = Model.Asunto;
+    ViewData["Title"] = $"{a.Folio} · {a.Titulo}";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Asuntos</a> / </span>
+            <h1 class="page-title">@a.Folio <span class="muted">·</span> @a.Titulo</h1>
+            <p class="page-sub">
+                <span class="badge @a.Estado.BadgeClass()">@a.Estado.Label()</span>
+                · @Materia.Label(a.MateriaKey)
+                @if (a.EsCobranza) { <span class="badge badge-info">Cobranza</span> }
+                · Prioridad @a.Prioridad
+                · Recibido @a.FechaRecepcion.LocalDateTime.ToString("yyyy-MM-dd")
+            </p>
+        </div>
+        <div>
+            <a asp-page="Edit" asp-route-id="@a.Id" class="btn btn-primary">Editar</a>
+        </div>
+    </div>
+
+    @if (TempData["Msg"] is string msg) { <div class="alert-success">@msg</div> }
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Identificación</h3>
+            <dl class="def-list">
+                <dt>Folio</dt><dd>@a.Folio</dd>
+                <dt>Cliente</dt>
+                <dd>
+                    @if (Model.Cliente is not null)
+                    {
+                        <a asp-page="/Clientes/Details" asp-route-id="@Model.Cliente.Id" class="link-primary">@Model.Cliente.DisplayName</a>
+                    }
+                    else { <text>—</text> }
+                </dd>
+                <dt>Responsable</dt><dd>@(Model.Responsable?.NombreCompleto ?? "Sin asignar")</dd>
+                <dt>Cuantía</dt><dd>@(a.Cuantia.HasValue ? a.Cuantia.Value.ToString("C0") : "—")</dd>
+                <dt>Etiquetas</dt>
+                <dd>
+                    @if (!string.IsNullOrWhiteSpace(a.Etiquetas))
+                    {
+                        foreach (var t in a.Etiquetas.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        { <span class="chip">@t</span> }
+                    }
+                    else { <text>—</text> }
+                </dd>
+            </dl>
+        </div>
+
+        <div class="card">
+            <h3>Estado del asunto</h3>
+            <dl class="def-list">
+                <dt>Recibido</dt><dd>@a.FechaRecepcion.LocalDateTime.ToString("yyyy-MM-dd")</dd>
+                <dt>Cerrado</dt><dd>@(a.FechaCierre?.LocalDateTime.ToString("yyyy-MM-dd") ?? "—")</dd>
+                <dt>Creado</dt><dd>@a.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</dd>
+                <dt>Modificado</dt><dd>@(a.UpdatedAt?.LocalDateTime.ToString("yyyy-MM-dd HH:mm") ?? "—")</dd>
+            </dl>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(a.Descripcion))
+    {
+        <div class="card">
+            <h3>Descripción</h3>
+            <p class="pre-wrap">@a.Descripcion</p>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-head">
+            <h3>Timeline procesal</h3>
+            <span class="muted">Fase 2</span>
+        </div>
+        <p class="muted">Actuaciones, promociones, audiencias y plazos se activan cuando se dé de alta el Juicio asociado a este asunto.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h3>Documentos</h3>
+            <span class="muted">@Model.Documentos.Count</span>
+        </div>
+        @if (!Model.Documentos.Any())
+        {
+            <p class="muted">Sin documentos aún. La subida de archivos se activa en la próxima iteración.</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead><tr><th>Nombre</th><th>Categoría</th><th>Tamaño</th><th>Fecha</th></tr></thead>
+                <tbody>
+                    @foreach (var d in Model.Documentos)
+                    {
+                        <tr>
+                            <td>@d.Nombre</td>
+                            <td>@d.Categoria</td>
+                            <td>@((d.TamanoBytes / 1024.0).ToString("F1")) KB</td>
+                            <td>@d.CreatedAt.LocalDateTime.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(a.NotasPrivadas))
+    {
+        <div class="card">
+            <h3>Notas privadas</h3>
+            <p class="pre-wrap">@a.NotasPrivadas</p>
+        </div>
+    }
+</section>

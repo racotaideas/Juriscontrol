@@ -1,5 +1,6 @@
 @page
 @model IndexModel
+@using JurisControl.Domain.Enums
 @{
     ViewData["Title"] = "Inicio";
 }
@@ -13,7 +14,7 @@
             de JurisControl. Materias activas: <b>@Model.MateriasAtiende</b>.
         </p>
         <div class="hero-meta">
-            <span class="chip">Fase 0 · scaffold</span>
+            <span class="chip">Fase 1 · CRUD</span>
             <span class="chip neutral">Despacho: @Model.DespachoId</span>
             <span class="chip good">Tenant OK</span>
         </div>
@@ -21,37 +22,56 @@
 
     <section class="cards-row">
         <article class="metric-card">
+            <div class="metric-label">Clientes activos</div>
+            <div class="metric-value">@Model.ClientesActivos</div>
+            <div class="metric-note"><a asp-page="/Clientes/Index">Ver lista</a></div>
+        </article>
+        <article class="metric-card">
             <div class="metric-label">Asuntos activos</div>
-            <div class="metric-value">—</div>
-            <div class="metric-note">Módulo pendiente (Fase 1)</div>
+            <div class="metric-value">@Model.AsuntosActivos</div>
+            <div class="metric-note"><a asp-page="/Asuntos/Index" asp-route-estado="Activo">Activos + asignados</a></div>
         </article>
         <article class="metric-card">
-            <div class="metric-label">Juicios en trámite</div>
-            <div class="metric-value">—</div>
-            <div class="metric-note">Módulo pendiente (Fase 2)</div>
+            <div class="metric-label">Recibidos sin asignar</div>
+            <div class="metric-value">@Model.AsuntosRecibidos</div>
+            <div class="metric-note"><a asp-page="/Asuntos/Index" asp-route-estado="Recibido">Ver bandeja</a></div>
         </article>
         <article class="metric-card">
-            <div class="metric-label">Audiencias esta semana</div>
-            <div class="metric-value">—</div>
-            <div class="metric-note">Módulo pendiente (Fase 2)</div>
-        </article>
-        <article class="metric-card">
-            <div class="metric-label">Plazos por vencer</div>
-            <div class="metric-value">—</div>
-            <div class="metric-note">Módulo pendiente (Fase 2)</div>
+            <div class="metric-label">Cerrados este mes</div>
+            <div class="metric-value">@Model.AsuntosCerradosMes</div>
+            <div class="metric-note"><a asp-page="/Asuntos/Index" asp-route-estado="Cerrado">Ver cerrados</a></div>
         </article>
     </section>
 
     <section class="info-card">
-        <h2 class="section-title">Estado técnico de la Fase 0</h2>
-        <ul class="checklist">
-            <li class="done">Multi-tenant con Global Query Filters + <code>SESSION_CONTEXT</code></li>
-            <li class="done">ASP.NET Core Identity con <code>DespachoId</code> en <code>ApplicationUser</code></li>
-            <li class="done">Cookie de sesión con claim <code>despacho_id</code></li>
-            <li class="done">Seed automático del despacho piloto en el arranque</li>
-            <li>CRUD de Clientes (Fase 1)</li>
-            <li>CRUD de Asuntos (Fase 1)</li>
-            <li>CRUD de Juicios (Fase 2)</li>
-        </ul>
+        <div class="card-head">
+            <h2 class="section-title">Últimos asuntos capturados</h2>
+            <a asp-page="/Asuntos/Create" class="btn btn-primary btn-sm">+ Nuevo asunto</a>
+        </div>
+        @if (!Model.UltimosAsuntos.Any())
+        {
+            <p class="muted">
+                No hay asuntos aún. Empieza dando de alta un <a asp-page="/Clientes/Create">cliente</a>
+                y luego captura su primer asunto.
+            </p>
+        }
+        else
+        {
+            <table class="table">
+                <thead><tr><th>Folio</th><th>Título</th><th>Cliente</th><th>Estado</th><th>Alta</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.UltimosAsuntos)
+                    {
+                        <tr>
+                            <td><a asp-page="/Asuntos/Details" asp-route-id="@a.Id" class="link-primary">@a.Folio</a></td>
+                            <td>@a.Titulo</td>
+                            <td>@a.Cliente</td>
+                            <td><span class="badge @a.Estado.BadgeClass()">@a.Estado.Label()</span></td>
+                            <td>@a.Fecha.LocalDateTime.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
     </section>
 </div>

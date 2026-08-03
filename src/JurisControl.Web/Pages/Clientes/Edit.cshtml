@@ -1,0 +1,86 @@
+@page "{id:guid}"
+@model JurisControl.Web.Pages.Clientes.EditModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = $"Editar · {Model.DisplayName}";
+}
+
+<section class="page page-narrow">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Editar cliente</h1>
+            <p class="page-sub">@Model.DisplayName</p>
+        </div>
+        <div>
+            <a asp-page="Details" asp-route-id="@Model.Id" class="btn btn-ghost">Cancelar</a>
+        </div>
+    </div>
+
+    <form method="post" class="form-grid card">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="alert-danger"></div>
+
+        <div class="field-full">
+            <label>Tipo</label>
+            <div class="segmented">
+                <label>
+                    <input type="radio" asp-for="Input.Tipo" value="@TipoCliente.PersonaFisica" />
+                    <span>Persona física</span>
+                </label>
+                <label>
+                    <input type="radio" asp-for="Input.Tipo" value="@TipoCliente.PersonaMoral" />
+                    <span>Persona moral</span>
+                </label>
+            </div>
+        </div>
+
+        <fieldset class="field-full">
+            <legend>Persona física</legend>
+            <div class="grid-3">
+                <div><label>Nombre(s)</label><input asp-for="Input.Nombre" class="input" /></div>
+                <div><label>Apellido paterno</label><input asp-for="Input.ApellidoPaterno" class="input" /></div>
+                <div><label>Apellido materno</label><input asp-for="Input.ApellidoMaterno" class="input" /></div>
+                <div><label>CURP</label><input asp-for="Input.Curp" class="input" maxlength="18" /></div>
+            </div>
+        </fieldset>
+
+        <fieldset class="field-full">
+            <legend>Persona moral</legend>
+            <div class="grid-3">
+                <div><label>Razón social</label><input asp-for="Input.RazonSocial" class="input" /></div>
+                <div><label>Nombre comercial</label><input asp-for="Input.NombreComercial" class="input" /></div>
+                <div><label>Representante legal</label><input asp-for="Input.RepresentanteLegal" class="input" /></div>
+            </div>
+        </fieldset>
+
+        <fieldset class="field-full">
+            <legend>Contacto y ubicación</legend>
+            <div class="grid-3">
+                <div><label>RFC</label><input asp-for="Input.Rfc" class="input" maxlength="13" /></div>
+                <div><label>Correo</label><input asp-for="Input.CorreoPrincipal" class="input" type="email" /></div>
+                <div><label>Teléfono</label><input asp-for="Input.TelefonoPrincipal" class="input" /></div>
+                <div><label>WhatsApp</label><input asp-for="Input.WhatsApp" class="input" /></div>
+                <div class="col-span-2"><label>Dirección</label><input asp-for="Input.Direccion" class="input" /></div>
+                <div><label>Ciudad</label><input asp-for="Input.Ciudad" class="input" /></div>
+                <div><label>Estado</label><input asp-for="Input.Estado" class="input" /></div>
+                <div><label>CP</label><input asp-for="Input.CodigoPostal" class="input" maxlength="10" /></div>
+            </div>
+        </fieldset>
+
+        <fieldset class="field-full">
+            <legend>Adicional</legend>
+            <div class="grid-3">
+                <div><label>Referido por</label><input asp-for="Input.ReferidoPor" class="input" /></div>
+                <div class="col-span-2"><label>Etiquetas</label><input asp-for="Input.Etiquetas" class="input" /></div>
+                <div class="field-full"><label>Notas privadas</label><textarea asp-for="Input.NotasPrivadas" class="input textarea"></textarea></div>
+            </div>
+        </fieldset>
+
+        <div class="field-full form-actions between">
+            <button type="submit" asp-page-handler="Delete" class="btn btn-danger" onclick="return confirm('¿Marcar cliente como inactivo? No se eliminan sus asuntos.');">Desactivar cliente</button>
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+    </form>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

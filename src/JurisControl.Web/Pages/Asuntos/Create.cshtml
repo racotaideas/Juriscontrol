@@ -1,0 +1,99 @@
+@page
+@model JurisControl.Web.Pages.Asuntos.CreateModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Nuevo asunto";
+}
+
+<section class="page page-narrow">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Nuevo asunto</h1>
+            <p class="page-sub">El folio se emite automáticamente al guardar (JC-@DateTime.Now.Year-NNNN).</p>
+        </div>
+        <a asp-page="Index" class="btn btn-ghost">Cancelar</a>
+    </div>
+
+    <form method="post" class="form-grid card">
+        <div asp-validation-summary="ModelOnly" class="alert-danger"></div>
+
+        <div class="field-full">
+            <label>Título <span class="req">*</span></label>
+            <input asp-for="Input.Titulo" class="input" placeholder="Ej. Contrato de prestación de servicios — Bimbo" />
+            <span asp-validation-for="Input.Titulo" class="error"></span>
+        </div>
+
+        <div>
+            <label>Cliente <span class="req">*</span></label>
+            <select asp-for="Input.ClienteId" asp-items="Model.ClientesList" class="input">
+                <option value="">Selecciona…</option>
+            </select>
+            <span asp-validation-for="Input.ClienteId" class="error"></span>
+        </div>
+
+        <div>
+            <label>Materia <span class="req">*</span></label>
+            <select asp-for="Input.MateriaKey" asp-items="Model.MateriasList" class="input"></select>
+        </div>
+
+        <div>
+            <label>Responsable</label>
+            <select asp-for="Input.ResponsableId" asp-items="Model.UsuariosList" class="input">
+                <option value="">Sin asignar</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Estado</label>
+            <select asp-for="Input.Estado" class="input">
+                @foreach (var e in Enum.GetValues<EstadoAsunto>())
+                {
+                    <option value="@e">@e.Label()</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <label>Fecha de recepción</label>
+            <input asp-for="Input.FechaRecepcion" type="date" class="input" />
+        </div>
+
+        <div>
+            <label>Prioridad (1 alta – 5 baja)</label>
+            <input asp-for="Input.Prioridad" type="number" min="1" max="5" class="input" />
+        </div>
+
+        <div>
+            <label>Cuantía (MXN, opcional)</label>
+            <input asp-for="Input.Cuantia" type="number" step="0.01" class="input" />
+        </div>
+
+        <div>
+            <label>Etiquetas</label>
+            <input asp-for="Input.Etiquetas" class="input" placeholder="urgente,retenedor" />
+        </div>
+
+        <div class="field-full">
+            <label class="checkbox">
+                <input asp-for="Input.EsCobranza" type="checkbox" />
+                <span>Este asunto forma parte del módulo de cobranza (banco / masiva)</span>
+            </label>
+        </div>
+
+        <div class="field-full">
+            <label>Descripción</label>
+            <textarea asp-for="Input.Descripcion" class="input textarea" rows="4" placeholder="Antecedentes, pretensiones, contexto…"></textarea>
+        </div>
+
+        <div class="field-full">
+            <label>Notas privadas</label>
+            <textarea asp-for="Input.NotasPrivadas" class="input textarea" rows="3"></textarea>
+        </div>
+
+        <div class="field-full form-actions">
+            <button type="submit" class="btn btn-primary">Guardar asunto</button>
+        </div>
+    </form>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

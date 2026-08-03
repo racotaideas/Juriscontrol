@@ -1,0 +1,75 @@
+@page
+@model JurisControl.Web.Pages.Asuntos.IndexModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Asuntos";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Asuntos</h1>
+            <p class="page-sub">@Model.Total resultados. Muestran hasta 300 ordenados por prioridad y fecha.</p>
+        </div>
+        <a asp-page="Create" class="btn btn-primary">+ Nuevo asunto</a>
+    </div>
+
+    <form method="get" class="filters">
+        <input type="search" name="q" value="@Model.Q" placeholder="Buscar folio, título o cliente…" class="input" />
+        <select name="estado" class="input">
+            <option value="">Todos los estados</option>
+            @foreach (var e in Enum.GetValues<EstadoAsunto>())
+            {
+                <option value="@e" selected="@(Model.Estado == e)">@e.Label()</option>
+            }
+        </select>
+        <select name="materia" class="input">
+            <option value="">Todas las materias</option>
+            @foreach (var m in Materia.All)
+            {
+                <option value="@m" selected="@(Model.Materia == m)">@Materia.Label(m)</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-ghost">Filtrar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Items.Any())
+        {
+            <div class="empty-state">
+                <p>No hay asuntos con esos filtros.</p>
+                <a asp-page="Create" class="btn btn-primary">Alta de asunto</a>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Título</th>
+                        <th>Cliente</th>
+                        <th>Materia</th>
+                        <th>Estado</th>
+                        <th>Responsable</th>
+                        <th>Recibido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Items)
+                    {
+                        <tr>
+                            <td><a asp-page="Details" asp-route-id="@r.Id" class="link-primary">@r.Folio</a></td>
+                            <td>@r.Titulo</td>
+                            <td>@r.Cliente</td>
+                            <td>@r.Materia</td>
+                            <td><span class="badge @r.Estado.BadgeClass()">@r.Estado.Label()</span></td>
+                            <td>@(r.Responsable ?? "—")</td>
+                            <td>@r.Fecha.LocalDateTime.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

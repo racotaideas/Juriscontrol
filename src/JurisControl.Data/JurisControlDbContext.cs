@@ -27,6 +27,9 @@ public class JurisControlDbContext
 
     public DbSet<Despacho> Despachos => Set<Despacho>();
     public DbSet<Cliente> Clientes => Set<Cliente>();
+    public DbSet<Asunto> Asuntos => Set<Asunto>();
+    public DbSet<Documento> Documentos => Set<Documento>();
+    public DbSet<ContadorFolio> ContadoresFolio => Set<ContadorFolio>();
 
     private bool CurrentIsPlatformScope() => _tenant.IsPlatformScope;
 

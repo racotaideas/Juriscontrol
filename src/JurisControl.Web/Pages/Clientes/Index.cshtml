@@ -1,0 +1,66 @@
+@page
+@model JurisControl.Web.Pages.Clientes.IndexModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Clientes";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Clientes</h1>
+            <p class="page-sub">@Model.Total registro(s) activos en este despacho.</p>
+        </div>
+        <a asp-page="Create" class="btn btn-primary">+ Nuevo cliente</a>
+    </div>
+
+    <form method="get" class="filters">
+        <input type="search" name="q" value="@Model.Q" placeholder="Buscar por nombre, razón social, RFC o correo…" class="input" />
+        <select name="tipo" class="input">
+            <option value="">Todos los tipos</option>
+            <option value="@nameof(TipoCliente.PersonaFisica)" selected="@(Model.Tipo == nameof(TipoCliente.PersonaFisica))">Persona física</option>
+            <option value="@nameof(TipoCliente.PersonaMoral)" selected="@(Model.Tipo == nameof(TipoCliente.PersonaMoral))">Persona moral</option>
+        </select>
+        <button type="submit" class="btn btn-ghost">Filtrar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Items.Any())
+        {
+            <div class="empty-state">
+                <p>Aún no hay clientes que coincidan. Empieza dando de alta uno.</p>
+                <a asp-page="Create" class="btn btn-primary">Alta de cliente</a>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nombre / Razón social</th>
+                        <th>Tipo</th>
+                        <th>RFC</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Items)
+                    {
+                        <tr>
+                            <td><a asp-page="Details" asp-route-id="@c.Id" class="link-primary">@c.DisplayName</a></td>
+                            <td>@(c.Tipo == TipoCliente.PersonaMoral ? "Moral" : "Física")</td>
+                            <td>@(c.Rfc ?? "—")</td>
+                            <td>@(c.CorreoPrincipal ?? "—")</td>
+                            <td>@(c.TelefonoPrincipal ?? "—")</td>
+                            <td class="row-actions">
+                                <a asp-page="Edit" asp-route-id="@c.Id" class="link">Editar</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

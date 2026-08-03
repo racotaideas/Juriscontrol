@@ -1,3 +1,4 @@
+using JurisControl.Data.Services;
 using JurisControl.Data.TenantContext;
 using JurisControl.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -28,6 +29,8 @@ public static class ServiceCollectionExtensions
                     sql.EnableRetryOnFailure(maxRetryCount: 3);
                 })
                 .AddInterceptors(sp.GetRequiredService<TenantSessionInterceptor>()));
+
+        services.AddScoped<IFolioService, FolioService>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
             {

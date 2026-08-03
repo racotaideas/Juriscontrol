@@ -1,0 +1,110 @@
+@page "{id:guid}"
+@model JurisControl.Web.Pages.Clientes.DetailsModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = Model.Cliente.DisplayName;
+    var c = Model.Cliente;
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Clientes</a> / </span>
+            <h1 class="page-title">@c.DisplayName</h1>
+            <p class="page-sub">
+                @(c.Tipo == TipoCliente.PersonaMoral ? "Persona moral" : "Persona física")
+                @if (!string.IsNullOrWhiteSpace(c.Rfc)) { <text> · RFC @c.Rfc</text> }
+                @if (!c.Activo) { <span class="badge badge-danger">Inactivo</span> }
+            </p>
+        </div>
+        <div>
+            <a asp-page="/Asuntos/Create" asp-route-clienteId="@c.Id" class="btn btn-primary">+ Nuevo asunto</a>
+            <a asp-page="Edit" asp-route-id="@c.Id" class="btn btn-ghost">Editar</a>
+        </div>
+    </div>
+
+    @if (TempData["Msg"] is string msg) { <div class="alert-success">@msg</div> }
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Contacto</h3>
+            <dl class="def-list">
+                <dt>Correo</dt><dd>@(c.CorreoPrincipal ?? "—")</dd>
+                <dt>Teléfono</dt><dd>@(c.TelefonoPrincipal ?? "—")</dd>
+                <dt>WhatsApp</dt><dd>@(c.WhatsApp ?? "—")</dd>
+                <dt>Dirección</dt>
+                <dd>
+                    @if (!string.IsNullOrWhiteSpace(c.Direccion) || !string.IsNullOrWhiteSpace(c.Ciudad))
+                    {
+                        <div>@c.Direccion</div>
+                        <div>@string.Join(", ", new[]{c.Ciudad, c.Estado, c.CodigoPostal}.Where(x=>!string.IsNullOrWhiteSpace(x)))</div>
+                    }
+                    else { <text>—</text> }
+                </dd>
+            </dl>
+        </div>
+
+        <div class="card">
+            <h3>Ficha</h3>
+            <dl class="def-list">
+                @if (c.Tipo == TipoCliente.PersonaFisica)
+                {
+                    <dt>CURP</dt><dd>@(c.Curp ?? "—")</dd>
+                    <dt>Ocupación</dt><dd>@(c.Ocupacion ?? "—")</dd>
+                }
+                else
+                {
+                    <dt>Nombre comercial</dt><dd>@(c.NombreComercial ?? "—")</dd>
+                    <dt>Rep. legal</dt><dd>@(c.RepresentanteLegal ?? "—")</dd>
+                }
+                <dt>Referido por</dt><dd>@(c.ReferidoPor ?? "—")</dd>
+                <dt>Etiquetas</dt>
+                <dd>
+                    @if (!string.IsNullOrWhiteSpace(c.Etiquetas))
+                    {
+                        foreach (var t in c.Etiquetas.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        { <span class="chip">@t</span> }
+                    }
+                    else { <text>—</text> }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head">
+            <h3>Asuntos de este cliente</h3>
+            <span class="muted">@Model.Asuntos.Count</span>
+        </div>
+        @if (!Model.Asuntos.Any())
+        {
+            <p class="muted">Aún no hay asuntos abiertos para este cliente.</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead><tr><th>Folio</th><th>Título</th><th>Materia</th><th>Estado</th><th>Recibido</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Asuntos)
+                    {
+                        <tr>
+                            <td><a asp-page="/Asuntos/Details" asp-route-id="@a.Id" class="link-primary">@a.Folio</a></td>
+                            <td>@a.Titulo</td>
+                            <td>@Materia.Label(a.MateriaKey)</td>
+                            <td><span class="badge @a.Estado.BadgeClass()">@a.Estado.Label()</span></td>
+                            <td>@a.FechaRecepcion.LocalDateTime.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(c.NotasPrivadas))
+    {
+        <div class="card">
+            <h3>Notas privadas</h3>
+            <p class="pre-wrap">@c.NotasPrivadas</p>
+        </div>
+    }
+</section>

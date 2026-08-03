@@ -40,12 +40,27 @@ RETURN SELECT 1 AS AccessOk
 GO
 
 -- Recrear la policy. Como la borramos arriba, aquí siempre entra a CREATE.
+-- Cada tabla ITenantEntity necesita FILTER (para SELECT/UPDATE/DELETE) y BLOCK
+-- AFTER INSERT/UPDATE (para no dejar meter filas con DespachoId de otro tenant).
 CREATE SECURITY POLICY security.TenantIsolationPolicy
     ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Clientes,
     ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Clientes AFTER INSERT,
     ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Clientes AFTER UPDATE,
+
     ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.AspNetUsers,
     ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.AspNetUsers AFTER INSERT,
-    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.AspNetUsers AFTER UPDATE
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.AspNetUsers AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Asuntos,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Asuntos AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Asuntos AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Documentos,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Documentos AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Documentos AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.ContadoresFolio,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.ContadoresFolio AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.ContadoresFolio AFTER UPDATE
 WITH (STATE = ON);
 GO
