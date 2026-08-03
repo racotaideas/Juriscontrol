@@ -74,8 +74,10 @@ try
         var services = scope.ServiceProvider;
         try
         {
+            var tenant = services.GetRequiredService<JurisControl.Data.TenantContext.ITenantContext>();
+            using var _platform = tenant.EnterPlatformScope();
+
             var db = services.GetRequiredService<JurisControlDbContext>();
-            db.SetPlatformScope();
             await db.Database.MigrateAsync();
             Bootlog("Migrations applied.");
             await RowLevelSecurityInstaller.ApplyAsync(db);

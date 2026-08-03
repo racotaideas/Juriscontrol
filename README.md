@@ -64,8 +64,8 @@ y viaja en la cookie de autenticación. De ahí se propaga:
    sobre las tablas de negocio. El `TenantId` viaja como `SESSION_CONTEXT`
    fijado por `TenantSessionInterceptor` antes de cada comando SQL.
 
-El único escape legítimo es `DbContext.SetPlatformScope()` — reservado para
-el `DbSeeder` y jobs de Hangfire de nivel plataforma.
+El único escape legítimo es `ITenantContext.EnterPlatformScope()` (IDisposable) —
+reservado para el `DbSeeder`, migraciones y jobs de Hangfire de nivel plataforma.
 
 ## Despliegue
 
