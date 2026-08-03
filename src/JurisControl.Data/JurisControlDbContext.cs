@@ -62,10 +62,14 @@ public class JurisControlDbContext
     private void ApplyTenantFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, ITenantEntity
     {
+        // Guid.Empty (00000000-...) nunca matchea un despacho real porque los
+        // DespachoId se generan con NEWSEQUENTIALID(). El coalesce evita el
+        // NullReferenceException que producía _tenant.DespachoId!.Value cuando
+        // no hay tenant en el scope (ej. durante DbSeeder con _forcePlatformScope).
         Expression<Func<TEntity, bool>> filter = e =>
             _forcePlatformScope
             || _tenant.IsPlatformScope
-            || e.DespachoId == _tenant.DespachoId!.Value;
+            || e.DespachoId == (_tenant.DespachoId ?? Guid.Empty);
         modelBuilder.Entity<TEntity>().HasQueryFilter(filter);
     }
 
