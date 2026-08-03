@@ -45,6 +45,11 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     environment: production
+    env:
+      FTP_HOST:  ${{ secrets.SMARTASP_FTP_SERVER }}
+      FTP_USER:  ${{ secrets.SMARTASP_FTP_USERNAME }}
+      FTP_PASS:  ${{ secrets.SMARTASP_FTP_PASSWORD }}
+      FTP_ROOT:  /juriscontrol
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -52,9 +57,30 @@ jobs:
           name: web-publish
           path: publish
 
-      # Force IIS to recycle by touching web.config after the sync.
-      # SmartASP.NET picks up the new binaries when web.config timestamp changes.
-      - name: Deploy via FTP to SmartASP.NET
+      # 1) Sube app_offline.htm — IIS detecta el archivo, apaga la app y libera los file locks
+      #    de los .dll para que el FTP pueda sobrescribirlos.
+      - name: Take app offline
+        run: |
+          set -e
+          cat > app_offline.htm <<'HTML'
+          <!DOCTYPE html>
+          <html lang="es"><head><meta charset="utf-8"><title>Actualizando…</title>
+          <style>body{font-family:-apple-system,Segoe UI,sans-serif;background:#f4f2ee;color:#222;display:grid;place-items:center;min-height:100vh;margin:0}
+          .card{background:#fff;padding:32px 40px;border-radius:12px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+          h1{margin:0 0 8px;color:#0a66c2}p{color:#666;margin:0}</style></head>
+          <body><div class="card"><h1>Actualizando JurisControl…</h1><p>Vuelve en unos segundos.</p></div></body></html>
+          HTML
+          echo "Uploading app_offline.htm to release IIS locks..."
+          curl --fail --show-error --silent \
+               --user "$FTP_USER:$FTP_PASS" \
+               -T app_offline.htm \
+               "ftp://$FTP_HOST$FTP_ROOT/app_offline.htm"
+          echo "Waiting 10 seconds for IIS to release file handles..."
+          sleep 10
+
+      # 2) Sube el nuevo publish al servidor. Excluye el propio app_offline.htm
+      #    para no borrarlo mientras se hace el sync (todavía lo necesitamos).
+      - name: Deploy binaries via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.SMARTASP_FTP_SERVER }}
@@ -67,23 +93,30 @@ jobs:
           state-name: .ftp-deploy-sync-state.json
           log-level: standard
           dangerous-clean-slate: false
+          exclude: |
+            **/app_offline.htm
+            **/.ftp-deploy-sync-state.json
+
+      # 3) Borra app_offline.htm — IIS ve que el archivo desapareció y reinicia la app
+      #    con los binarios nuevos. Este paso corre siempre para evitar dejar el sitio
+      #    caído si el deploy falla parcialmente.
+      - name: Bring app back online
+        if: always()
+        run: |
+          echo "Removing app_offline.htm to restart IIS app pool..."
+          curl --show-error --silent \
+               --user "$FTP_USER:$FTP_PASS" \
+               -Q "DELE $FTP_ROOT/app_offline.htm" \
+               "ftp://$FTP_HOST/" || true
+          echo "Done."
 
 # Secrets requeridos (Settings → Secrets and variables → Actions):
 #   SMARTASP_FTP_SERVER      win8153.site4now.net           (sin protocolo, sin puerto)
 #   SMARTASP_FTP_USERNAME    rafacorona-001
 #   SMARTASP_FTP_PASSWORD    (password del panel / FTP)
 #
-# El destino remoto es /juriscontrol/ que corresponde a la raíz del sitio en
-# SmartASP.NET (según el publishUrl del .PublishSettings: ftp://.../juriscontrol).
-#
-# La primera corrida sube todos los archivos publish (varios cientos de MB).
-# Las siguientes solo suben las diferencias gracias a state-name (sync incremental).
-#
-# Environment Variables del sitio (panel de SmartASP.NET, sección del sitio JurisControl):
+# Environment Variables del sitio (panel de SmartASP.NET):
 #   ConnectionStrings__DefaultConnection =
-#     Server=sql8006.site4now.net;
-#     Database=db_a81e28_juriscontrol35;
-#     User Id=db_a81e28_juriscontrol35_admin;
-#     Password=<contrasena SQL>;
-#     TrustServerCertificate=True;
-#     MultipleActiveResultSets=true
+#     Server=sql8006.site4now.net;Database=db_a81e28_juriscontrol35;
+#     User Id=db_a81e28_juriscontrol35_admin;Password=<contrasena SQL>;
+#     TrustServerCertificate=True;MultipleActiveResultSets=true
