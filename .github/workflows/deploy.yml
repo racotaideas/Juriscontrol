@@ -49,7 +49,7 @@ jobs:
       FTP_HOST:  ${{ secrets.SMARTASP_FTP_SERVER }}
       FTP_USER:  ${{ secrets.SMARTASP_FTP_USERNAME }}
       FTP_PASS:  ${{ secrets.SMARTASP_FTP_PASSWORD }}
-      FTP_ROOT:  /juriscontrol
+      FTP_ROOT:  /juris
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -87,7 +87,7 @@ jobs:
           username: ${{ secrets.SMARTASP_FTP_USERNAME }}
           password: ${{ secrets.SMARTASP_FTP_PASSWORD }}
           local-dir: ./publish/
-          server-dir: /juriscontrol/
+          server-dir: /juris/
           protocol: ftp
           port: 21
           state-name: .ftp-deploy-sync-state.json
