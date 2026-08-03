@@ -42,7 +42,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     if: github.event_name == 'push'
     environment: production
     steps:
@@ -52,20 +52,38 @@ jobs:
           name: web-publish
           path: publish
 
-      - name: Web Deploy to SmartASP.NET
-        uses: rasmusbuchholdt/simply-web-deploy@2.1.0
+      # Force IIS to recycle by touching web.config after the sync.
+      # SmartASP.NET picks up the new binaries when web.config timestamp changes.
+      - name: Deploy via FTP to SmartASP.NET
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          website-name: ${{ secrets.SMARTASP_WEBSITE_NAME }}
-          server-computer-name: ${{ secrets.SMARTASP_SERVER }}
-          server-username: ${{ secrets.SMARTASP_USERNAME }}
-          server-password: ${{ secrets.SMARTASP_PASSWORD }}
-          source-path: publish
+          server: ${{ secrets.SMARTASP_FTP_SERVER }}
+          username: ${{ secrets.SMARTASP_FTP_USERNAME }}
+          password: ${{ secrets.SMARTASP_FTP_PASSWORD }}
+          local-dir: ./publish/
+          server-dir: /juriscontrol/
+          protocol: ftp
+          port: 21
+          state-name: .ftp-deploy-sync-state.json
+          log-level: standard
+          dangerous-clean-slate: false
 
 # Secrets requeridos (Settings → Secrets and variables → Actions):
-#   SMARTASP_WEBSITE_NAME    ej. juriscontrol
-#   SMARTASP_SERVER          ej. https://win8153.site4now.net:8172/msdeploy.axd
-#   SMARTASP_USERNAME        del panel Web Deploy
-#   SMARTASP_PASSWORD        del panel Web Deploy
+#   SMARTASP_FTP_SERVER      win8153.site4now.net           (sin protocolo, sin puerto)
+#   SMARTASP_FTP_USERNAME    rafacorona-001
+#   SMARTASP_FTP_PASSWORD    (password del panel / FTP)
 #
-# Environment Variables del sitio (panel de SmartASP.NET):
-#   ConnectionStrings__DefaultConnection = Server=sql8006.site4now.net; Database=db_a81e28_juriscontrol35; User Id=db_a81e28_juriscontrol35_admin; Password=<contrasena>; TrustServerCertificate=True
+# El destino remoto es /juriscontrol/ que corresponde a la raíz del sitio en
+# SmartASP.NET (según el publishUrl del .PublishSettings: ftp://.../juriscontrol).
+#
+# La primera corrida sube todos los archivos publish (varios cientos de MB).
+# Las siguientes solo suben las diferencias gracias a state-name (sync incremental).
+#
+# Environment Variables del sitio (panel de SmartASP.NET, sección del sitio JurisControl):
+#   ConnectionStrings__DefaultConnection =
+#     Server=sql8006.site4now.net;
+#     Database=db_a81e28_juriscontrol35;
+#     User Id=db_a81e28_juriscontrol35_admin;
+#     Password=<contrasena SQL>;
+#     TrustServerCertificate=True;
+#     MultipleActiveResultSets=true
