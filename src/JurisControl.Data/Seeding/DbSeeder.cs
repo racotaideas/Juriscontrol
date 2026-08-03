@@ -22,22 +22,21 @@ public static class DbSeeder
 
     public static async Task SeedAsync(IServiceProvider services)
     {
-        // Scope propio con ITenantContext en modo plataforma para saltarnos los query filters
-        // y las validaciones de "no insertar sin tenant". El seed es la única operación
-        // legítima que puede correr fuera de un tenant.
+        // Scope propio: el seed es la única operación legítima que corre fuera de un tenant.
+        // Con EnterPlatformScope() el mismo ITenantContext (scoped) queda en modo plataforma
+        // durante todo el seed. Eso lo ven a la vez:
+        //   - el Global Query Filter de EF Core (deja pasar todos los registros)
+        //   - el TenantSessionInterceptor (manda PlatformScope=1 al SESSION_CONTEXT)
+        // Sin esta segunda parte, la RLS de SQL Server (fn_TenantAccessPredicate) devuelve
+        // block predicate y rechaza los INSERT del seed con error 33504.
         using var scope = services.CreateScope();
         var sp = scope.ServiceProvider;
         var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
-        // Sustituye el HttpTenantContext scoped por uno de plataforma solo dentro de este scope.
-        // Como el ServiceProvider del scope ya construyó el DbContext, tenemos que reasignar el
-        // campo _tenant manualmente vía reflexión — o mejor, exponerlo con setter. Vamos por el
-        // enfoque limpio: el DbContext recibe el ITenantContext por constructor y ya está
-        // resuelto del scope. Aquí lo que hacemos es garantizar que el TenantContext registrado
-        // sea el de plataforma antes de resolver el DbContext.
-        var db = sp.GetRequiredService<JurisControlDbContext>();
-        db.SetPlatformScope();
+        var tenant = sp.GetRequiredService<ITenantContext>();
+        using var _platform = tenant.EnterPlatformScope();
 
+        var db = sp.GetRequiredService<JurisControlDbContext>();
         var roleManager = sp.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
         var userManager = sp.GetRequiredService<UserManager<ApplicationUser>>();
 

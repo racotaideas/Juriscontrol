@@ -16,7 +16,6 @@ public class JurisControlDbContext
     : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     private readonly ITenantContext _tenant;
-    private bool _forcePlatformScope;
 
     public JurisControlDbContext(
         DbContextOptions<JurisControlDbContext> options,
@@ -29,13 +28,7 @@ public class JurisControlDbContext
     public DbSet<Despacho> Despachos => Set<Despacho>();
     public DbSet<Cliente> Clientes => Set<Cliente>();
 
-    /// <summary>
-    /// Encendido: el DbContext ignora el ITenantContext y trata como si estuviera en modo plataforma.
-    /// Solo debe usarse desde el DbSeeder o desde migraciones. No exponer a request-handlers.
-    /// </summary>
-    public void SetPlatformScope() => _forcePlatformScope = true;
-
-    private bool CurrentIsPlatformScope() => _forcePlatformScope || _tenant.IsPlatformScope;
+    private bool CurrentIsPlatformScope() => _tenant.IsPlatformScope;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,13 +55,11 @@ public class JurisControlDbContext
     private void ApplyTenantFilter<TEntity>(ModelBuilder modelBuilder)
         where TEntity : class, ITenantEntity
     {
-        // Guid.Empty (00000000-...) nunca matchea un despacho real porque los
-        // DespachoId se generan con NEWSEQUENTIALID(). El coalesce evita el
-        // NullReferenceException que producía _tenant.DespachoId!.Value cuando
-        // no hay tenant en el scope (ej. durante DbSeeder con _forcePlatformScope).
+        // Guid.Empty nunca matchea un despacho real (los IDs se generan con NEWSEQUENTIALID).
+        // El coalesce evita NRE cuando no hay tenant en scope y no estamos en plataforma:
+        // en ese caso el filtro descarta todo, que es el comportamiento seguro.
         Expression<Func<TEntity, bool>> filter = e =>
-            _forcePlatformScope
-            || _tenant.IsPlatformScope
+            _tenant.IsPlatformScope
             || e.DespachoId == (_tenant.DespachoId ?? Guid.Empty);
         modelBuilder.Entity<TEntity>().HasQueryFilter(filter);
     }

@@ -14,6 +14,7 @@ public sealed class HttpTenantContext : ITenantContext
     public const string PlatformScopeClaimType = "platform_scope";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private bool _platformOverride;
 
     public HttpTenantContext(IHttpContextAccessor httpContextAccessor)
     {
@@ -30,7 +31,23 @@ public sealed class HttpTenantContext : ITenantContext
     }
 
     public bool IsPlatformScope =>
-        _httpContextAccessor.HttpContext?.User?.HasClaim(PlatformScopeClaimType, "true") == true;
+        _platformOverride
+        || _httpContextAccessor.HttpContext?.User?.HasClaim(PlatformScopeClaimType, "true") == true;
+
+    public IDisposable EnterPlatformScope() => new PlatformScopeToken(this);
+
+    private sealed class PlatformScopeToken : IDisposable
+    {
+        private readonly HttpTenantContext _ctx;
+        private readonly bool _previous;
+        public PlatformScopeToken(HttpTenantContext ctx)
+        {
+            _ctx = ctx;
+            _previous = ctx._platformOverride;
+            ctx._platformOverride = true;
+        }
+        public void Dispose() => _ctx._platformOverride = _previous;
+    }
 }
 
 /// <summary>
@@ -39,12 +56,30 @@ public sealed class HttpTenantContext : ITenantContext
 /// </summary>
 public sealed class BackgroundTenantContext : ITenantContext
 {
+    private bool _platformOverride;
+    private readonly bool _defaultPlatformScope;
+
     public BackgroundTenantContext(Guid? despachoId = null, bool platformScope = false)
     {
         DespachoId = despachoId;
-        IsPlatformScope = platformScope;
+        _defaultPlatformScope = platformScope;
     }
 
     public Guid? DespachoId { get; }
-    public bool IsPlatformScope { get; }
+    public bool IsPlatformScope => _platformOverride || _defaultPlatformScope;
+
+    public IDisposable EnterPlatformScope() => new PlatformScopeToken(this);
+
+    private sealed class PlatformScopeToken : IDisposable
+    {
+        private readonly BackgroundTenantContext _ctx;
+        private readonly bool _previous;
+        public PlatformScopeToken(BackgroundTenantContext ctx)
+        {
+            _ctx = ctx;
+            _previous = ctx._platformOverride;
+            ctx._platformOverride = true;
+        }
+        public void Dispose() => _ctx._platformOverride = _previous;
+    }
 }
