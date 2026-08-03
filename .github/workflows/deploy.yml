@@ -30,6 +30,21 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity minimal
 
+      # SmartASP.NET no propaga las Environment Variables del panel al proceso
+      # dotnet que corre en IIS. Inyectamos la connection string en un
+      # appsettings.Production.json generado durante el build; ASP.NET Core lo
+      # lee automáticamente cuando ASPNETCORE_ENVIRONMENT=Production.
+      - name: Inject production configuration
+        shell: pwsh
+        run: |
+          $config = @{
+            ConnectionStrings = @{
+              DefaultConnection = "${{ secrets.SQL_CONNECTION_STRING }}"
+            }
+          } | ConvertTo-Json -Depth 5
+          $config | Out-File -FilePath "src/JurisControl.Web/appsettings.Production.json" -Encoding utf8
+          Write-Host "appsettings.Production.json creado (${{ secrets.SQL_CONNECTION_STRING == '' && 'VACÍO — falta configurar SQL_CONNECTION_STRING secret' || 'con connection string' }})."
+
       - name: Publish
         run: dotnet publish ${{ env.WEB_PROJECT }} --configuration Release --no-build --output ${{ env.PUBLISH_DIR }}
 
@@ -114,9 +129,9 @@ jobs:
 #   SMARTASP_FTP_SERVER      win8153.site4now.net           (sin protocolo, sin puerto)
 #   SMARTASP_FTP_USERNAME    rafacorona-001
 #   SMARTASP_FTP_PASSWORD    (password del panel / FTP)
+#   SQL_CONNECTION_STRING    Server=sql8006.site4now.net;Database=db_a81e28_juriscontrol35;User Id=db_a81e28_juriscontrol35_admin;Password=<pass>;TrustServerCertificate=True;MultipleActiveResultSets=true
 #
-# Environment Variables del sitio (panel de SmartASP.NET):
-#   ConnectionStrings__DefaultConnection =
-#     Server=sql8006.site4now.net;Database=db_a81e28_juriscontrol35;
-#     User Id=db_a81e28_juriscontrol35_admin;Password=<contrasena SQL>;
-#     TrustServerCertificate=True;MultipleActiveResultSets=true
+# Nota: la connection string se inyecta durante el build en appsettings.Production.json
+# porque SmartASP.NET no propaga las Environment Variables del panel al proceso .NET
+# hosted en IIS. El appsettings.Production.json queda incluido en el artifact publish
+# y se sube por FTP como un archivo más.
