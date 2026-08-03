@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using JurisControl.Data.TenantContext;
 using JurisControl.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -11,11 +12,16 @@ namespace JurisControl.Web.Pages.Account;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly ITenantContext _tenant;
     private readonly ILogger<LoginModel> _logger;
 
-    public LoginModel(SignInManager<ApplicationUser> signInManager, ILogger<LoginModel> logger)
+    public LoginModel(
+        SignInManager<ApplicationUser> signInManager,
+        ITenantContext tenant,
+        ILogger<LoginModel> logger)
     {
         _signInManager = signInManager;
+        _tenant = tenant;
         _logger = logger;
     }
 
@@ -49,8 +55,17 @@ public class LoginModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var result = await _signInManager.PasswordSignInAsync(
-            Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+        // Bypass RLS solo durante la autenticación: aún no hay claim despacho_id,
+        // así que un SELECT normal contra AspNetUsers devuelve 0 filas y el login
+        // fallaría con "credenciales incorrectas" incluso con password correcto.
+        // Al terminar PasswordSignInAsync ya hay cookie con despacho_id y las
+        // siguientes queries filtran por tenant como corresponde.
+        Microsoft.AspNetCore.Identity.SignInResult result;
+        using (_tenant.EnterPlatformScope())
+        {
+            result = await _signInManager.PasswordSignInAsync(
+                Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+        }
 
         if (result.Succeeded)
         {
