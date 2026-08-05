@@ -84,6 +84,8 @@ try
             Bootlog("RLS policies applied.");
             await DbSeeder.SeedAsync(app.Services);
             Bootlog("Seed complete.");
+            await DemoDataSeeder.SeedAsync(app.Services, app.Configuration);
+            Bootlog("Demo data seed (if enabled) complete.");
         }
         catch (Exception ex)
         {
