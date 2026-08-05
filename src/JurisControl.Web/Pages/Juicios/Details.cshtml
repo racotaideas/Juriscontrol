@@ -1,0 +1,229 @@
+@page "{id:guid}"
+@model JurisControl.Web.Pages.Juicios.DetailsModel
+@using JurisControl.Domain.Enums
+@{
+    var j = Model.Juicio;
+    ViewData["Title"] = $"{j.NumeroExpediente} · {j.TipoJuicio}";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Juicios</a> / </span>
+            <h1 class="page-title">Expediente @j.NumeroExpediente</h1>
+            <p class="page-sub">
+                <span class="badge @j.Estado.BadgeClass()">@j.Estado.Label()</span>
+                · @j.TipoJuicio · @Materia.Label(j.MateriaKey) · @j.Juzgado
+            </p>
+            <p class="muted">
+                Asunto:
+                @if (Model.Asunto is not null)
+                { <a asp-page="/Asuntos/Details" asp-route-id="@Model.Asunto.Id" class="link">@Model.Asunto.Folio · @Model.Asunto.Titulo</a> }
+                @if (Model.ClientePrincipal is not null)
+                { <text> · Cliente: <a asp-page="/Clientes/Details" asp-route-id="@Model.ClientePrincipal.Id" class="link">@Model.ClientePrincipal.DisplayName</a></text> }
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Msg"] is string msg) { <div class="alert-success">@msg</div> }
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-head"><h3>Partes</h3><span class="muted">@Model.Partes.Count</span></div>
+            @if (!Model.Partes.Any()) { <p class="muted">Sin partes capturadas aún.</p> }
+            else
+            {
+                <ul class="line-list">
+                    @foreach (var p in Model.Partes)
+                    {
+                        <li>
+                            <b>@p.Rol.Label()</b>: @(p.Cliente?.DisplayName ?? p.NombreLibre)
+                            @if (!string.IsNullOrWhiteSpace(p.Representante)) { <span class="muted"> · Repr: @p.Representante</span> }
+                        </li>
+                    }
+                </ul>
+            }
+            <form method="post" asp-page-handler="Parte" class="mini-form">
+                <div class="grid-3">
+                    <select asp-for="Parte.Rol" class="input">
+                        @foreach (var r in Enum.GetValues<RolProcesal>()) { <option value="@r">@r.Label()</option> }
+                    </select>
+                    <select asp-for="Parte.ClienteId" asp-items="Model.ClientesList" class="input">
+                        <option value="">— O parte externa —</option>
+                    </select>
+                    <input asp-for="Parte.NombreLibre" class="input" placeholder="Nombre parte externa" />
+                    <input asp-for="Parte.Representante" class="input" placeholder="Representante" />
+                    <input asp-for="Parte.Notas" class="input col-span-2" placeholder="Notas" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Agregar parte</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h3>Datos del juicio</h3></div>
+            <dl class="def-list">
+                <dt>Expediente</dt><dd>@j.NumeroExpediente</dd>
+                <dt>Juzgado</dt><dd>@j.Juzgado</dd>
+                <dt>Tipo</dt><dd>@j.TipoJuicio</dd>
+                <dt>Cuantía</dt><dd>@(j.Cuantia?.ToString("C0") ?? "—")</dd>
+                <dt>Inicio</dt><dd>@j.FechaInicio.ToString("yyyy-MM-dd")</dd>
+                <dt>Conclusión</dt><dd>@(j.FechaConclusion?.ToString("yyyy-MM-dd") ?? "—")</dd>
+            </dl>
+            @if (!string.IsNullOrWhiteSpace(j.Descripcion))
+            {
+                <div style="margin-top:8px"><b>Descripción:</b><p class="pre-wrap">@j.Descripcion</p></div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h3>Plazos</h3><span class="muted">@Model.Plazos.Count</span></div>
+        @if (Model.Plazos.Any())
+        {
+            <table class="table">
+                <thead><tr><th>Descripción</th><th>Inicio</th><th>Vence</th><th>Estado</th><th>Responsable</th></tr></thead>
+                <tbody>
+                    @foreach (var p in Model.Plazos)
+                    {
+                        <tr>
+                            <td>@p.Descripcion</td>
+                            <td>@p.FechaInicio.ToString("yyyy-MM-dd")</td>
+                            <td>@p.FechaVencimiento.ToString("yyyy-MM-dd") @(p.DiasHabiles ? "(hábiles)" : "(naturales)")</td>
+                            <td><span class="badge @p.Estado.BadgeClass()">@p.Estado.Label()</span></td>
+                            <td>@(p.Responsable?.NombreCompleto ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        <form method="post" asp-page-handler="Plazo" class="mini-form">
+            <div class="grid-3">
+                <input asp-for="Plz.Descripcion" class="input col-span-2" placeholder="Ej. Contestar demanda" />
+                <select asp-for="Plz.ResponsableId" asp-items="Model.UsuariosList" class="input">
+                    <option value="">Responsable…</option>
+                </select>
+                <input asp-for="Plz.FechaInicio" type="date" class="input" />
+                <input asp-for="Plz.FechaVencimiento" type="date" class="input" />
+                <input asp-for="Plz.DiasOriginales" type="number" class="input" placeholder="Días" />
+                <label class="checkbox"><input asp-for="Plz.DiasHabiles" type="checkbox" /><span>Días hábiles</span></label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Agregar plazo</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h3>Audiencias</h3><span class="muted">@Model.Audiencias.Count</span></div>
+        @if (Model.Audiencias.Any())
+        {
+            <table class="table">
+                <thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Lugar</th><th>Estado</th><th>Asignado</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Audiencias)
+                    {
+                        <tr>
+                            <td>@a.FechaHora.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@a.Tipo</td>
+                            <td>@(a.Lugar ?? "—")</td>
+                            <td><span class="badge @a.Estado.BadgeClass()">@a.Estado.Label()</span></td>
+                            <td>@(a.AsignadoA?.NombreCompleto ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        <form method="post" asp-page-handler="Audiencia" class="mini-form">
+            <div class="grid-3">
+                <input asp-for="Aud.FechaHora" type="datetime-local" class="input" />
+                <input asp-for="Aud.Tipo" class="input" placeholder="Ej. audiencia inicial" />
+                <input asp-for="Aud.Lugar" class="input" placeholder="Sala 3" />
+                <select asp-for="Aud.Estado" class="input">
+                    @foreach (var e in Enum.GetValues<EstadoAudiencia>()) { <option value="@e">@e.Label()</option> }
+                </select>
+                <select asp-for="Aud.AsignadoAId" asp-items="Model.UsuariosList" class="input col-span-2">
+                    <option value="">Asignar a…</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Programar audiencia</button>
+        </form>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-head"><h3>Actuaciones del juzgado</h3><span class="muted">@Model.Actuaciones.Count</span></div>
+            @if (Model.Actuaciones.Any())
+            {
+                <ul class="timeline">
+                    @foreach (var a in Model.Actuaciones)
+                    {
+                        <li>
+                            <div class="timeline-date">@a.Fecha.ToString("yyyy-MM-dd")</div>
+                            <div>
+                                <b>@a.Tipo.Label()</b>: @a.Resumen
+                                @if (a.FechaNotificacion.HasValue) { <span class="muted"> · notificado @a.FechaNotificacion.Value.ToString("yyyy-MM-dd")</span> }
+                                @if (!string.IsNullOrWhiteSpace(a.Detalle)) { <p class="pre-wrap">@a.Detalle</p> }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            <form method="post" asp-page-handler="Actuacion" class="mini-form">
+                <div class="grid-3">
+                    <select asp-for="Act.Tipo" class="input">
+                        @foreach (var t in Enum.GetValues<TipoActuacion>()) { <option value="@t">@t.Label()</option> }
+                    </select>
+                    <input asp-for="Act.Fecha" type="date" class="input" />
+                    <input asp-for="Act.FechaNotificacion" type="date" class="input" placeholder="Notif." />
+                    <input asp-for="Act.Resumen" class="input field-full" placeholder="Ej. Auto que admite pruebas" />
+                    <textarea asp-for="Act.Detalle" class="input textarea field-full" placeholder="Detalle"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Registrar actuación</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h3>Promociones del despacho</h3><span class="muted">@Model.Promociones.Count</span></div>
+            @if (Model.Promociones.Any())
+            {
+                <ul class="timeline">
+                    @foreach (var p in Model.Promociones)
+                    {
+                        <li>
+                            <div class="timeline-date">@p.FechaPresentacion.ToString("yyyy-MM-dd")</div>
+                            <div>
+                                <b>@p.Tipo.Label()</b>: @p.Titulo
+                                @if (!string.IsNullOrWhiteSpace(p.NumeroAcuse)) { <span class="muted"> · acuse @p.NumeroAcuse</span> }
+                                @if (p.Firmante is not null) { <span class="muted"> · @p.Firmante.NombreCompleto</span> }
+                                @if (!string.IsNullOrWhiteSpace(p.Contenido)) { <p class="pre-wrap">@p.Contenido</p> }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            <form method="post" asp-page-handler="Promocion" class="mini-form">
+                <div class="grid-3">
+                    <select asp-for="Prom.Tipo" class="input">
+                        @foreach (var t in Enum.GetValues<TipoPromocion>()) { <option value="@t">@t.Label()</option> }
+                    </select>
+                    <input asp-for="Prom.FechaPresentacion" type="date" class="input" />
+                    <input asp-for="Prom.NumeroAcuse" class="input" placeholder="Núm. acuse" />
+                    <input asp-for="Prom.Titulo" class="input field-full" placeholder="Título" />
+                    <select asp-for="Prom.FirmanteId" asp-items="Model.UsuariosList" class="input col-span-2">
+                        <option value="">Firmante…</option>
+                    </select>
+                    <textarea asp-for="Prom.Contenido" class="input textarea field-full" placeholder="Contenido / resumen"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Registrar promoción</button>
+            </form>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(j.Observaciones))
+    {
+        <div class="card">
+            <h3>Observaciones</h3>
+            <p class="pre-wrap">@j.Observaciones</p>
+        </div>
+    }
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

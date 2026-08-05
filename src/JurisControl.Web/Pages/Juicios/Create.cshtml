@@ -1,0 +1,80 @@
+@page
+@model JurisControl.Web.Pages.Juicios.CreateModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Nuevo juicio";
+}
+
+<section class="page page-narrow">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Nuevo juicio</h1>
+            <p class="page-sub">Un juicio siempre pertenece a un asunto. Puedes agregar más de un juicio por asunto.</p>
+        </div>
+        <a asp-page="Index" class="btn btn-ghost">Cancelar</a>
+    </div>
+
+    <form method="post" class="form-grid card">
+        <div asp-validation-summary="ModelOnly" class="alert-danger"></div>
+
+        <div class="field-full">
+            <label>Asunto <span class="req">*</span></label>
+            <select asp-for="Input.AsuntoId" asp-items="Model.AsuntosList" class="input">
+                <option value="">Selecciona…</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Núm. de expediente <span class="req">*</span></label>
+            <input asp-for="Input.NumeroExpediente" class="input" placeholder="234/2026" />
+        </div>
+
+        <div>
+            <label>Juzgado o tribunal <span class="req">*</span></label>
+            <input asp-for="Input.Juzgado" class="input" placeholder="Juzgado 6° Civil, CDMX" />
+        </div>
+
+        <div>
+            <label>Tipo de juicio <span class="req">*</span></label>
+            <input asp-for="Input.TipoJuicio" class="input" placeholder="Ordinario mercantil" />
+        </div>
+
+        <div>
+            <label>Materia</label>
+            <select asp-for="Input.MateriaKey" asp-items="Model.MateriasList" class="input"></select>
+        </div>
+
+        <div>
+            <label>Estado</label>
+            <select asp-for="Input.Estado" class="input">
+                @foreach (var e in Enum.GetValues<EstadoJuicio>()) { <option value="@e">@e.Label()</option> }
+            </select>
+        </div>
+
+        <div>
+            <label>Fecha de inicio <span class="req">*</span></label>
+            <input asp-for="Input.FechaInicio" type="date" class="input" />
+        </div>
+
+        <div>
+            <label>Cuantía (opcional)</label>
+            <input asp-for="Input.Cuantia" type="number" step="0.01" class="input" />
+        </div>
+
+        <div class="field-full">
+            <label>Descripción</label>
+            <textarea asp-for="Input.Descripcion" class="input textarea" rows="3"></textarea>
+        </div>
+
+        <div class="field-full">
+            <label>Observaciones</label>
+            <textarea asp-for="Input.Observaciones" class="input textarea" rows="2"></textarea>
+        </div>
+
+        <div class="field-full form-actions">
+            <button type="submit" class="btn btn-primary">Guardar juicio</button>
+        </div>
+    </form>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

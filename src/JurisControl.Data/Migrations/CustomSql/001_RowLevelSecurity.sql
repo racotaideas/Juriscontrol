@@ -61,6 +61,30 @@ CREATE SECURITY POLICY security.TenantIsolationPolicy
 
     ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.ContadoresFolio,
     ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.ContadoresFolio AFTER INSERT,
-    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.ContadoresFolio AFTER UPDATE
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.ContadoresFolio AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Juicios,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Juicios AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Juicios AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.PartesJuicio,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.PartesJuicio AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.PartesJuicio AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Actuaciones,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Actuaciones AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Actuaciones AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Promociones,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Promociones AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Promociones AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Audiencias,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Audiencias AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Audiencias AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plazos,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plazos AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plazos AFTER UPDATE
 WITH (STATE = ON);
 GO

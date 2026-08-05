@@ -27,7 +27,10 @@ public class IndexModel : PageModel
 
     public int ClientesActivos { get; private set; }
     public int AsuntosActivos { get; private set; }
-    public int AsuntosRecibidos { get; private set; }
+    public int JuiciosEnTramite { get; private set; }
+    public int AudienciasSemana { get; private set; }
+    public int PlazosPorVencer { get; private set; }
+    public int PlazosVencidos { get; private set; }
     public int AsuntosCerradosMes { get; private set; }
 
     public record AsuntoBrief(Guid Id, string Folio, string Titulo, string Cliente, EstadoAsunto Estado, DateTimeOffset Fecha);
@@ -45,10 +48,23 @@ public class IndexModel : PageModel
             ModoCobranza = despacho.ModoCobranza;
         }
 
+        var hoy = DateOnly.FromDateTime(DateTime.Now);
+        var enUnaSemana = hoy.AddDays(7);
+        var dtInicioSemana = DateTime.Now.Date;
+        var dtFinSemana = DateTime.Now.Date.AddDays(7);
+
         ClientesActivos = await _db.Clientes.CountAsync(c => c.Activo);
         AsuntosActivos = await _db.Asuntos.CountAsync(a =>
             a.Estado == EstadoAsunto.Activo || a.Estado == EstadoAsunto.Asignado);
-        AsuntosRecibidos = await _db.Asuntos.CountAsync(a => a.Estado == EstadoAsunto.Recibido);
+        JuiciosEnTramite = await _db.Juicios.CountAsync(j =>
+            j.Estado != EstadoJuicio.Concluido && j.Estado != EstadoJuicio.Sobreseido);
+        AudienciasSemana = await _db.Audiencias.CountAsync(a =>
+            a.FechaHora >= dtInicioSemana && a.FechaHora <= dtFinSemana
+            && a.Estado != EstadoAudiencia.Cancelada);
+        PlazosPorVencer = await _db.Plazos.CountAsync(p =>
+            p.Estado == EstadoPlazo.Abierto && p.FechaVencimiento >= hoy && p.FechaVencimiento <= enUnaSemana);
+        PlazosVencidos = await _db.Plazos.CountAsync(p =>
+            p.Estado == EstadoPlazo.Abierto && p.FechaVencimiento < hoy);
         var desdeInicioMes = new DateTimeOffset(new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1),
             TimeSpan.Zero);
         AsuntosCerradosMes = await _db.Asuntos.CountAsync(a =>

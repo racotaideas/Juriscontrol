@@ -30,6 +30,12 @@ public class JurisControlDbContext
     public DbSet<Asunto> Asuntos => Set<Asunto>();
     public DbSet<Documento> Documentos => Set<Documento>();
     public DbSet<ContadorFolio> ContadoresFolio => Set<ContadorFolio>();
+    public DbSet<Juicio> Juicios => Set<Juicio>();
+    public DbSet<ParteJuicio> PartesJuicio => Set<ParteJuicio>();
+    public DbSet<Actuacion> Actuaciones => Set<Actuacion>();
+    public DbSet<Promocion> Promociones => Set<Promocion>();
+    public DbSet<Audiencia> Audiencias => Set<Audiencia>();
+    public DbSet<Plazo> Plazos => Set<Plazo>();
 
     private bool CurrentIsPlatformScope() => _tenant.IsPlatformScope;
 

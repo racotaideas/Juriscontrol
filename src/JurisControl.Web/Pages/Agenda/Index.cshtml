@@ -1,0 +1,86 @@
+@page
+@model JurisControl.Web.Pages.Agenda.IndexModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Agenda";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Agenda</h1>
+            <p class="page-sub">Audiencias y plazos entre @Model.Desde.ToString("yyyy-MM-dd") y @Model.Hasta.ToString("yyyy-MM-dd").</p>
+        </div>
+        <div>
+            <a asp-page="Index" asp-route-rango="dia" asp-route-desde="@Model.Desde" class="btn btn-ghost @(Model.Rango=="dia"?"active":"")">Día</a>
+            <a asp-page="Index" asp-route-rango="semana" asp-route-desde="@Model.Desde" class="btn btn-ghost @(Model.Rango=="semana"?"active":"")">Semana</a>
+            <a asp-page="Index" asp-route-rango="mes" asp-route-desde="@Model.Desde" class="btn btn-ghost @(Model.Rango=="mes"?"active":"")">Mes</a>
+        </div>
+    </div>
+
+    @if (Model.PlazosVencidos > 0)
+    {
+        <div class="alert-danger">
+            ⚠ Hay <b>@Model.PlazosVencidos plazos abiertos vencidos</b> en el despacho. Revisa las bandejas por juicio.
+        </div>
+    }
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-head"><h3>Audiencias</h3><span class="muted">@Model.Audiencias.Count</span></div>
+            @if (!Model.Audiencias.Any())
+            {
+                <p class="muted">Sin audiencias en el rango.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead><tr><th>Fecha</th><th>Expediente</th><th>Tipo</th><th>Lugar</th><th>Asignado</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in Model.Audiencias)
+                        {
+                            <tr>
+                                <td>@a.FechaHora.ToString("ddd dd MMM · HH:mm")</td>
+                                <td><a asp-page="/Juicios/Details" asp-route-id="@a.JuicioId" class="link-primary">@a.Expediente</a></td>
+                                <td>@a.Tipo <span class="badge @a.Estado.BadgeClass()">@a.Estado.Label()</span></td>
+                                <td>@(a.Lugar ?? "—")</td>
+                                <td>@(a.Asignado ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h3>Plazos por vencer</h3><span class="muted">@Model.Plazos.Count</span></div>
+            @if (!Model.Plazos.Any())
+            {
+                <p class="muted">Sin plazos abiertos en el rango.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead><tr><th>Vence</th><th>Días</th><th>Expediente</th><th>Descripción</th><th>Responsable</th></tr></thead>
+                    <tbody>
+                        @foreach (var p in Model.Plazos)
+                        {
+                            var urgente = p.DiasRestantes <= 3;
+                            <tr class="@(urgente ? "row-urgent" : "")">
+                                <td>@p.Vencimiento.ToString("yyyy-MM-dd")</td>
+                                <td>
+                                    <span class="badge @(p.DiasRestantes < 0 ? "badge-danger" : p.DiasRestantes <= 3 ? "badge-warning" : "badge-info")">
+                                        @p.DiasRestantes d
+                                    </span>
+                                </td>
+                                <td><a asp-page="/Juicios/Details" asp-route-id="@p.JuicioId" class="link-primary">@p.Expediente</a></td>
+                                <td>@p.Descripcion</td>
+                                <td>@(p.Responsable ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</section>

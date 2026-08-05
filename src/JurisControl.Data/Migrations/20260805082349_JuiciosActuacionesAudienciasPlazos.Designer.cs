@@ -4,6 +4,7 @@ using JurisControl.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JurisControl.Data.Migrations
 {
     [DbContext(typeof(JurisControlDbContext))]
-    partial class JurisControlDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260805082349_JuiciosActuacionesAudienciasPlazos")]
+    partial class JuiciosActuacionesAudienciasPlazos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

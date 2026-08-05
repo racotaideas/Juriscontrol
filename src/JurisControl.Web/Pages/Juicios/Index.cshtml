@@ -1,0 +1,68 @@
+@page
+@model JurisControl.Web.Pages.Juicios.IndexModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Juicios";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Juicios</h1>
+            <p class="page-sub">Expedientes judiciales activos y concluidos.</p>
+        </div>
+        <a asp-page="Create" class="btn btn-primary">+ Nuevo juicio</a>
+    </div>
+
+    <form method="get" class="filters">
+        <input type="search" name="q" value="@Model.Q" placeholder="Expediente, juzgado, cliente, folio…" class="input" />
+        <select name="estado" class="input">
+            <option value="">Todos los estados</option>
+            @foreach (var e in Enum.GetValues<EstadoJuicio>())
+            {
+                <option value="@e" selected="@(Model.Estado == e)">@e.Label()</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-ghost">Filtrar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Items.Any())
+        {
+            <div class="empty-state">
+                <p>No hay juicios. Comienza dándolos de alta desde un asunto.</p>
+                <a asp-page="Create" class="btn btn-primary">Alta de juicio</a>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Expediente</th>
+                        <th>Juzgado</th>
+                        <th>Tipo</th>
+                        <th>Cliente</th>
+                        <th>Materia</th>
+                        <th>Estado</th>
+                        <th>Inicio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Items)
+                    {
+                        <tr>
+                            <td><a asp-page="Details" asp-route-id="@r.Id" class="link-primary">@r.Expediente</a></td>
+                            <td>@r.Juzgado</td>
+                            <td>@r.Tipo</td>
+                            <td>@r.Cliente <span class="muted">(@r.AsuntoFolio)</span></td>
+                            <td>@r.Materia</td>
+                            <td><span class="badge @r.Estado.BadgeClass()">@r.Estado.Label()</span></td>
+                            <td>@r.Inicio.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

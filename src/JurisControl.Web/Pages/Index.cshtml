@@ -32,14 +32,24 @@
             <div class="metric-note"><a asp-page="/Asuntos/Index" asp-route-estado="Activo">Activos + asignados</a></div>
         </article>
         <article class="metric-card">
-            <div class="metric-label">Recibidos sin asignar</div>
-            <div class="metric-value">@Model.AsuntosRecibidos</div>
-            <div class="metric-note"><a asp-page="/Asuntos/Index" asp-route-estado="Recibido">Ver bandeja</a></div>
+            <div class="metric-label">Juicios en trámite</div>
+            <div class="metric-value">@Model.JuiciosEnTramite</div>
+            <div class="metric-note"><a asp-page="/Juicios/Index">Ver juicios</a></div>
         </article>
         <article class="metric-card">
-            <div class="metric-label">Cerrados este mes</div>
-            <div class="metric-value">@Model.AsuntosCerradosMes</div>
-            <div class="metric-note"><a asp-page="/Asuntos/Index" asp-route-estado="Cerrado">Ver cerrados</a></div>
+            <div class="metric-label">Audiencias esta semana</div>
+            <div class="metric-value">@Model.AudienciasSemana</div>
+            <div class="metric-note"><a asp-page="/Agenda/Index">Ver agenda</a></div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Plazos por vencer (7d)</div>
+            <div class="metric-value">@Model.PlazosPorVencer</div>
+            <div class="metric-note"><a asp-page="/Agenda/Index">Ver agenda</a></div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Plazos vencidos</div>
+            <div class="metric-value">@Model.PlazosVencidos</div>
+            <div class="metric-note">@(Model.PlazosVencidos > 0 ? "Requieren atención" : "Al día")</div>
         </article>
     </section>
 

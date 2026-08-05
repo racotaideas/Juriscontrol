@@ -17,9 +17,9 @@
             <nav class="app-nav">
                 <a asp-page="/Index" class="app-nav-link">Inicio</a>
                 <a asp-page="/Asuntos/Index" class="app-nav-link">Asuntos</a>
-                <a class="app-nav-link disabled" title="Fase 2">Juicios</a>
+                <a asp-page="/Juicios/Index" class="app-nav-link">Juicios</a>
                 <a asp-page="/Clientes/Index" class="app-nav-link">Clientes</a>
-                <a class="app-nav-link disabled" title="Fase 2">Agenda</a>
+                <a asp-page="/Agenda/Index" class="app-nav-link">Agenda</a>
             </nav>
             <div class="app-user">
                 @if (User.Identity?.IsAuthenticated == true)

@@ -196,6 +196,24 @@ legend { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-sp
 .alert-success { padding: 10px 14px; border-radius: var(--radius); background: var(--good-soft); color: var(--good); font-size: 13px; font-weight: 600; }
 .alert-danger { padding: 10px 14px; border-radius: var(--radius); background: var(--danger-soft); color: var(--danger); font-size: 13px; font-weight: 600; }
 
+/* Tanda 2: juicio timeline, agenda */
+.timeline { list-style: none; padding: 0; margin: 0; }
+.timeline li { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--divider); font-size: 14px; }
+.timeline li:last-child { border-bottom: none; }
+.timeline-date { font-size: 12px; font-weight: 700; color: var(--text-3); font-variant-numeric: tabular-nums; padding-top: 2px; }
+
+.line-list { list-style: none; padding: 0; margin: 0 0 8px; }
+.line-list li { padding: 6px 0; border-bottom: 1px dashed var(--divider); font-size: 14px; }
+.line-list li:last-child { border-bottom: none; }
+
+.mini-form { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: 8px; }
+.mini-form .btn { align-self: flex-start; }
+
+.row-urgent { background: var(--warn-soft); }
+.row-urgent:hover { background: #f7e6c4; }
+
+.app-nav-link.active { color: var(--brand); }
+
 /* Responsive */
 @media (max-width: 720px) {
     .app-nav { display: none; }
