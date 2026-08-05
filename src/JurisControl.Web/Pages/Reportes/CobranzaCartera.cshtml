@@ -1,0 +1,29 @@
+@page
+@model JurisControl.Web.Pages.Reportes.CobranzaCarteraModel
+@{
+    ViewData["Title"] = "Reporte · Cartera por acreedor";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Cartera por acreedor</h1>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <div class="card">
+        @if (!Model.Rows.Any()) { <p class="muted">Sin créditos registrados.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Acreedor</th><th>Créditos</th><th class="text-right">Monto original</th><th class="text-right">Saldo actual</th><th>% recup.</th></tr></thead><tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var recuperado = r.MontoOriginal > 0 ? (r.MontoOriginal - r.SaldoTotal) / r.MontoOriginal : 0;
+                    <tr><td>@r.Acreedor</td><td>@r.Creditos</td><td class="text-right">@r.MontoOriginal.ToString("C0")</td><td class="text-right">@r.SaldoTotal.ToString("C0")</td><td>@recuperado.ToString("P1")</td></tr>
+                }
+            </tbody></table>
+        }
+    </div>
+</section>

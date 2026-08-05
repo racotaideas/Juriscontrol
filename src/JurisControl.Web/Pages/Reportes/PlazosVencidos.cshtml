@@ -1,0 +1,39 @@
+@page
+@model JurisControl.Web.Pages.Reportes.PlazosVencidosModel
+@{
+    ViewData["Title"] = "Reporte · Plazos";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Plazos vencidos y por vencer</h1>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <div class="card">
+        <h3>Vencidos (@Model.Vencidos.Count)</h3>
+        @if (!Model.Vencidos.Any()) { <p class="muted">Ninguno.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Vencía</th><th>Días</th><th>Expediente</th><th>Descripción</th><th>Responsable</th></tr></thead><tbody>
+                @foreach (var p in Model.Vencidos)
+                { <tr class="row-urgent"><td>@p.Vence.ToString("yyyy-MM-dd")</td><td>@p.DiasVencido d</td><td>@p.Expediente</td><td>@p.Descripcion</td><td>@(p.Responsable ?? "—")</td></tr> }
+            </tbody></table>
+        }
+    </div>
+
+    <div class="card">
+        <h3>Próximos 14 días (@Model.ProximosVencer.Count)</h3>
+        @if (!Model.ProximosVencer.Any()) { <p class="muted">Ninguno.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Vence</th><th>Días restantes</th><th>Expediente</th><th>Descripción</th><th>Responsable</th></tr></thead><tbody>
+                @foreach (var p in Model.ProximosVencer)
+                { <tr><td>@p.Vence.ToString("yyyy-MM-dd")</td><td>@(-p.DiasVencido) d</td><td>@p.Expediente</td><td>@p.Descripcion</td><td>@(p.Responsable ?? "—")</td></tr> }
+            </tbody></table>
+        }
+    </div>
+</section>

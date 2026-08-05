@@ -1,0 +1,114 @@
+@page
+@model JurisControl.Web.Pages.Cobranza.CreateModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Nuevo crédito";
+}
+
+<section class="page page-narrow">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Nuevo crédito</h1>
+            <p class="page-sub">Los créditos se agrupan bajo un asunto marcado como "cobranza".</p>
+        </div>
+        <a asp-page="Index" class="btn btn-ghost">Cancelar</a>
+    </div>
+
+    <form method="post" class="form-grid card">
+        <div asp-validation-summary="ModelOnly" class="alert-danger"></div>
+
+        <div class="field-full">
+            <label>Asunto (marcado como cobranza) <span class="req">*</span></label>
+            <select asp-for="Input.AsuntoId" asp-items="Model.AsuntosCobranzaList" class="input">
+                <option value="">Selecciona…</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Núm. de crédito <span class="req">*</span></label>
+            <input asp-for="Input.NumeroCredito" class="input" />
+        </div>
+
+        <div>
+            <label>Acreedor (institución) <span class="req">*</span></label>
+            <input asp-for="Input.Acreedor" class="input" placeholder="Ej. Banco X, Empresa Y" />
+        </div>
+
+        <div>
+            <label>Deudor (del catálogo)</label>
+            <select asp-for="Input.DeudorClienteId" asp-items="Model.ClientesList" class="input">
+                <option value="">— externo —</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Nombre del deudor (si es externo)</label>
+            <input asp-for="Input.NombreDeudor" class="input" />
+        </div>
+
+        <div>
+            <label>Tipo</label>
+            <select asp-for="Input.Tipo" class="input">
+                @foreach (var t in Enum.GetValues<TipoCredito>()) { <option value="@t">@t.Label()</option> }
+            </select>
+        </div>
+
+        <div>
+            <label>Estado</label>
+            <select asp-for="Input.Estado" class="input">
+                @foreach (var e in Enum.GetValues<EstadoCredito>()) { <option value="@e">@e.Label()</option> }
+            </select>
+        </div>
+
+        <div>
+            <label>Monto original (MXN)</label>
+            <input asp-for="Input.MontoOriginal" type="number" step="0.01" class="input" />
+        </div>
+
+        <div>
+            <label>Saldo actual (MXN)</label>
+            <input asp-for="Input.SaldoActual" type="number" step="0.01" class="input" />
+        </div>
+
+        <div>
+            <label>Tasa interés (% anual)</label>
+            <input asp-for="Input.TasaInteres" type="number" step="0.0001" class="input" />
+        </div>
+
+        <div>
+            <label>Fecha origen</label>
+            <input asp-for="Input.FechaOrigen" type="date" class="input" />
+        </div>
+
+        <div>
+            <label>Último pago</label>
+            <input asp-for="Input.FechaUltimoPago" type="date" class="input" />
+        </div>
+
+        <div>
+            <label>Vencimiento</label>
+            <input asp-for="Input.FechaVencimiento" type="date" class="input" />
+        </div>
+
+        <div>
+            <label>Días de mora</label>
+            <input asp-for="Input.DiasMora" type="number" class="input" />
+        </div>
+
+        <div class="field-full">
+            <label>Garantía</label>
+            <input asp-for="Input.Garantia" class="input" placeholder="Inmueble, aval, prenda…" />
+        </div>
+
+        <div class="field-full">
+            <label>Observaciones</label>
+            <textarea asp-for="Input.Observaciones" class="input textarea" rows="3"></textarea>
+        </div>
+
+        <div class="field-full form-actions">
+            <button type="submit" class="btn btn-primary">Guardar crédito</button>
+        </div>
+    </form>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

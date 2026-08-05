@@ -1,0 +1,33 @@
+@page
+@model JurisControl.Web.Pages.Reportes.ActividadModel
+@{
+    ViewData["Title"] = "Reporte · Actividad";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Actividad por período</h1>
+            <p class="page-sub">@Model.TotalActuaciones actuaciones y @Model.TotalPromociones promociones entre @Model.Desde.ToString("yyyy-MM-dd") y @Model.Hasta.ToString("yyyy-MM-dd").</p>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <form method="get" class="filters">
+        <label>Desde <input type="date" name="desde" value="@Model.Desde.ToString("yyyy-MM-dd")" class="input" /></label>
+        <label>Hasta <input type="date" name="hasta" value="@Model.Hasta.ToString("yyyy-MM-dd")" class="input" /></label>
+        <button class="btn btn-primary">Generar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Rows.Any()) { <p class="muted">Sin movimientos en el período.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Expediente</th><th>Tipo</th><th>Actuaciones</th><th>Promociones</th><th>Total</th></tr></thead><tbody>
+                @foreach (var r in Model.Rows)
+                { <tr><td>@r.Expediente</td><td>@r.Tipo</td><td>@r.Actuaciones</td><td>@r.Promociones</td><td><b>@(r.Actuaciones + r.Promociones)</b></td></tr> }
+            </tbody></table>
+        }
+    </div>
+</section>

@@ -214,6 +214,22 @@ legend { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-sp
 
 .app-nav-link.active { color: var(--brand); }
 
+/* Tanda 3: Reportes + Cobranza */
+.report-card { display: block; background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 20px 22px; text-decoration: none; color: var(--text); transition: box-shadow 120ms; }
+.report-card:hover { box-shadow: 0 0 0 1px var(--brand), 0 4px 12px rgba(10, 102, 194, 0.1); text-decoration: none; }
+.report-emoji { font-size: 28px; margin-bottom: 8px; }
+.report-card h3 { margin: 0 0 4px; color: var(--brand); }
+.report-card p { margin: 0; color: var(--text-2); font-size: 13px; }
+
+.text-right { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media print {
+    .app-topbar, .app-footer, .filters, .btn, .page-head > div:last-child { display: none !important; }
+    body { background: white; }
+    .card { box-shadow: none; border: 1px solid var(--border); page-break-inside: avoid; }
+    .page { padding: 0; }
+}
+
 /* Responsive */
 @media (max-width: 720px) {
     .app-nav { display: none; }

@@ -1,0 +1,91 @@
+@page
+@model JurisControl.Web.Pages.Cobranza.IndexModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Cobranza";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Cartera de cobranza</h1>
+            <p class="page-sub">Créditos bajo gestión del despacho. Solo aplica cuando el despacho tiene activado el modo cobranza.</p>
+        </div>
+        <a asp-page="Create" class="btn btn-primary">+ Nuevo crédito</a>
+    </div>
+
+    <section class="cards-row">
+        <article class="metric-card">
+            <div class="metric-label">Saldo total gestionado</div>
+            <div class="metric-value">@Model.SaldoTotal.ToString("C0")</div>
+            <div class="metric-note">Cartera + judicial + convenio + ejecutado</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Saldo en juicio</div>
+            <div class="metric-value">@Model.SaldoJudicial.ToString("C0")</div>
+            <div class="metric-note">Créditos con proceso judicial abierto</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">En cartera</div>
+            <div class="metric-value">@Model.CreditosCartera</div>
+            <div class="metric-note">Aún sin juicio</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Recuperados</div>
+            <div class="metric-value">@Model.CreditosRecuperados</div>
+            <div class="metric-note">Créditos cerrados con pago total</div>
+        </article>
+    </section>
+
+    <form method="get" class="filters">
+        <input type="search" name="q" value="@Model.Q" placeholder="Número, acreedor, deudor…" class="input" />
+        <select name="estado" class="input">
+            <option value="">Todos los estados</option>
+            @foreach (var e in Enum.GetValues<EstadoCredito>())
+            {
+                <option value="@e" selected="@(Model.Estado == e)">@e.Label()</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-ghost">Filtrar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Items.Any())
+        {
+            <div class="empty-state">
+                <p>Sin créditos capturados. Da de alta un asunto marcado como "cobranza" y crea el crédito asociado.</p>
+                <a asp-page="Create" class="btn btn-primary">Alta de crédito</a>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Núm.</th>
+                        <th>Acreedor</th>
+                        <th>Deudor</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th class="text-right">Saldo</th>
+                        <th>Mora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Items)
+                    {
+                        <tr>
+                            <td><a asp-page="Details" asp-route-id="@r.Id" class="link-primary">@r.Numero</a></td>
+                            <td>@r.Acreedor</td>
+                            <td>@r.Deudor</td>
+                            <td>@r.Tipo.Label()</td>
+                            <td><span class="badge @r.Estado.BadgeClass()">@r.Estado.Label()</span></td>
+                            <td class="text-right">@r.Saldo.ToString("C0")</td>
+                            <td>@(r.Mora?.ToString() ?? "—") d</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

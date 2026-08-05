@@ -85,6 +85,22 @@ CREATE SECURITY POLICY security.TenantIsolationPolicy
 
     ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plazos,
     ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plazos AFTER INSERT,
-    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plazos AFTER UPDATE
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plazos AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Creditos,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Creditos AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Creditos AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.PagosCobranza,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.PagosCobranza AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.PagosCobranza AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.GestionesCobranza,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.GestionesCobranza AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.GestionesCobranza AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Remates,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Remates AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Remates AFTER UPDATE
 WITH (STATE = ON);
 GO

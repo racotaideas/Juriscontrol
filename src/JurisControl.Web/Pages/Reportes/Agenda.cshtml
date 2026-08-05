@@ -1,0 +1,46 @@
+@page
+@model JurisControl.Web.Pages.Reportes.AgendaModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Reporte · Agenda";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Agenda del período</h1>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <form method="get" class="filters">
+        <label>Desde <input type="date" name="desde" value="@Model.Desde.ToString("yyyy-MM-dd")" class="input" /></label>
+        <label>Hasta <input type="date" name="hasta" value="@Model.Hasta.ToString("yyyy-MM-dd")" class="input" /></label>
+        <button class="btn btn-primary">Generar</button>
+    </form>
+
+    <div class="card">
+        <h3>Audiencias (@Model.Audiencias.Count)</h3>
+        @if (!Model.Audiencias.Any()) { <p class="muted">Sin audiencias en el período.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Fecha</th><th>Expediente</th><th>Tipo</th><th>Lugar</th><th>Asignado</th><th>Estado</th></tr></thead><tbody>
+                @foreach (var a in Model.Audiencias)
+                { <tr><td>@a.FechaHora.ToString("yyyy-MM-dd HH:mm")</td><td>@a.Expediente</td><td>@a.Tipo</td><td>@(a.Lugar ?? "—")</td><td>@(a.Asignado ?? "—")</td><td>@a.Estado.Label()</td></tr> }
+            </tbody></table>
+        }
+    </div>
+
+    <div class="card">
+        <h3>Plazos (@Model.Plazos.Count)</h3>
+        @if (!Model.Plazos.Any()) { <p class="muted">Sin plazos en el período.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Vence</th><th>Expediente</th><th>Descripción</th><th>Responsable</th><th>Estado</th></tr></thead><tbody>
+                @foreach (var p in Model.Plazos)
+                { <tr><td>@p.Vence.ToString("yyyy-MM-dd")</td><td>@p.Expediente</td><td>@p.Descripcion</td><td>@(p.Responsable ?? "—")</td><td>@p.Estado.Label()</td></tr> }
+            </tbody></table>
+        }
+    </div>
+</section>

@@ -1,0 +1,27 @@
+@page
+@model JurisControl.Web.Pages.Reportes.RecuperacionModel
+@{
+    ViewData["Title"] = "Reporte · Recuperación mensual";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Recuperación mensual</h1>
+            <p class="page-sub">Total histórico recuperado: <b>@Model.TotalGlobal.ToString("C0")</b>. Últimos 24 meses.</p>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <div class="card">
+        @if (!Model.Rows.Any()) { <p class="muted">Sin pagos registrados aún.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Mes</th><th>Pagos</th><th class="text-right">Monto recuperado</th></tr></thead><tbody>
+                @foreach (var r in Model.Rows)
+                { <tr><td>@Model.MesLabel(r.Mes) @r.Anio</td><td>@r.Pagos</td><td class="text-right">@r.Total.ToString("C0")</td></tr> }
+            </tbody></table>
+        }
+    </div>
+</section>

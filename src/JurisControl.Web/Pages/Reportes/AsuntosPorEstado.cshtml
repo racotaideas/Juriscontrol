@@ -1,0 +1,40 @@
+@page
+@model JurisControl.Web.Pages.Reportes.AsuntosPorEstadoModel
+@using JurisControl.Domain.Enums
+@{
+    ViewData["Title"] = "Reporte · Asuntos por estado";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Asuntos por materia y estado</h1>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <div class="card">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Materia</th>
+                    @foreach (var e in Model.Estados) { <th>@e.Label()</th> }
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var kv in Model.Matriz)
+                {
+                    var total = kv.Value.Values.Sum();
+                    if (total == 0) continue;
+                    <tr>
+                        <td><b>@Materia.Label(kv.Key)</b></td>
+                        @foreach (var e in Model.Estados) { <td>@kv.Value[e]</td> }
+                        <td><b>@total</b></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

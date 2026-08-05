@@ -1,0 +1,27 @@
+@page
+@model JurisControl.Web.Pages.Reportes.ClientesTopModel
+@{
+    ViewData["Title"] = "Reporte · Clientes top";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Clientes top</h1>
+            <p class="page-sub">Top 50 clientes por asuntos activos y valor acumulado.</p>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <div class="card">
+        @if (!Model.Rows.Any()) { <p class="muted">Aún no hay clientes con asuntos.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Cliente</th><th>Asuntos activos</th><th>Asuntos total</th><th class="text-right">Cuantía total</th></tr></thead><tbody>
+                @foreach (var r in Model.Rows)
+                { <tr><td>@r.Nombre</td><td>@r.AsuntosActivos</td><td>@r.AsuntosTotal</td><td class="text-right">@r.CuantiaTotal.ToString("C0")</td></tr> }
+            </tbody></table>
+        }
+    </div>
+</section>

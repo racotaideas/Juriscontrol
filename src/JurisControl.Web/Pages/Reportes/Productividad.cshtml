@@ -1,0 +1,32 @@
+@page
+@model JurisControl.Web.Pages.Reportes.ProductividadModel
+@{
+    ViewData["Title"] = "Reporte · Productividad";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Reportes</a> / </span>
+            <h1 class="page-title">Productividad por abogado</h1>
+        </div>
+        <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+    </div>
+
+    <form method="get" class="filters">
+        <label>Desde <input type="date" name="desde" value="@Model.Desde.ToString("yyyy-MM-dd")" class="input" /></label>
+        <label>Hasta <input type="date" name="hasta" value="@Model.Hasta.ToString("yyyy-MM-dd")" class="input" /></label>
+        <button class="btn btn-primary">Generar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Rows.Any()) { <p class="muted">Sin actividad registrada por abogados en el período.</p> }
+        else
+        {
+            <table class="table"><thead><tr><th>Abogado</th><th>Asuntos asignados</th><th>Promociones</th><th>Audiencias</th><th>Plazos cumplidos</th></tr></thead><tbody>
+                @foreach (var r in Model.Rows)
+                { <tr><td>@r.Abogado</td><td>@r.Asuntos</td><td>@r.Promociones</td><td>@r.AudienciasAsignadas</td><td>@r.PlazosCumplidos</td></tr> }
+            </tbody></table>
+        }
+    </div>
+</section>

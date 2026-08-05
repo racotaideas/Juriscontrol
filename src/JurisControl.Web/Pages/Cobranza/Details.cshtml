@@ -1,0 +1,175 @@
+@page "{id:guid}"
+@model JurisControl.Web.Pages.Cobranza.DetailsModel
+@using JurisControl.Domain.Enums
+@{
+    var c = Model.Credito;
+    ViewData["Title"] = $"Crédito {c.NumeroCredito}";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Cobranza</a> / </span>
+            <h1 class="page-title">Crédito @c.NumeroCredito</h1>
+            <p class="page-sub">
+                <span class="badge @c.Estado.BadgeClass()">@c.Estado.Label()</span>
+                · @c.Tipo.Label() · Acreedor: @c.Acreedor
+                @if (Model.Asunto is not null)
+                { <text> · <a asp-page="/Asuntos/Details" asp-route-id="@Model.Asunto.Id" class="link">@Model.Asunto.Folio</a></text> }
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Msg"] is string msg) { <div class="alert-success">@msg</div> }
+
+    <section class="cards-row">
+        <article class="metric-card">
+            <div class="metric-label">Monto original</div>
+            <div class="metric-value">@c.MontoOriginal.ToString("C0")</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Saldo actual</div>
+            <div class="metric-value">@c.SaldoActual.ToString("C0")</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Total cobrado</div>
+            <div class="metric-value">@Model.TotalCobrado.ToString("C0")</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Días de mora</div>
+            <div class="metric-value">@(c.DiasMora?.ToString() ?? "—")</div>
+        </article>
+    </section>
+
+    <div class="grid-2">
+        <div class="card">
+            <div class="card-head"><h3>Pagos</h3><span class="muted">@Model.Pagos.Count</span></div>
+            @if (Model.Pagos.Any())
+            {
+                <table class="table">
+                    <thead><tr><th>Fecha</th><th class="text-right">Monto</th><th>Capital</th><th>Interés</th><th>Medio</th></tr></thead>
+                    <tbody>
+                        @foreach (var p in Model.Pagos)
+                        {
+                            <tr>
+                                <td>@p.Fecha.ToString("yyyy-MM-dd")</td>
+                                <td class="text-right">@p.Monto.ToString("C0")</td>
+                                <td>@p.AplicadoCapital.ToString("C0")</td>
+                                <td>@p.AplicadoInteres.ToString("C0")</td>
+                                <td>@(p.MedioPago ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            <form method="post" asp-page-handler="Pago" class="mini-form">
+                <div class="grid-3">
+                    <input asp-for="Pago.Fecha" type="date" class="input" />
+                    <input asp-for="Pago.Monto" type="number" step="0.01" class="input" placeholder="Monto" />
+                    <input asp-for="Pago.MedioPago" class="input" placeholder="Transferencia" />
+                    <input asp-for="Pago.AplicadoCapital" type="number" step="0.01" class="input" placeholder="A capital" />
+                    <input asp-for="Pago.AplicadoInteres" type="number" step="0.01" class="input" placeholder="A interés" />
+                    <input asp-for="Pago.AplicadoGastos" type="number" step="0.01" class="input" placeholder="A gastos" />
+                    <input asp-for="Pago.Referencia" class="input col-span-2" placeholder="Referencia" />
+                    <input asp-for="Pago.Notas" class="input field-full" placeholder="Notas" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Registrar pago</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card-head"><h3>Gestiones</h3><span class="muted">@Model.Gestiones.Count</span></div>
+            @if (Model.Gestiones.Any())
+            {
+                <ul class="timeline">
+                    @foreach (var g in Model.Gestiones)
+                    {
+                        <li>
+                            <div class="timeline-date">@g.Fecha.ToString("yyyy-MM-dd HH:mm")</div>
+                            <div>
+                                <b>@g.Canal · @g.Resultado.Label()</b>
+                                @if (!string.IsNullOrWhiteSpace(g.PersonaContactada)) { <span class="muted"> · @g.PersonaContactada</span> }
+                                <p class="pre-wrap">@g.Descripcion</p>
+                                @if (g.PromesaFecha.HasValue)
+                                {
+                                    <div class="muted">Promesa: @g.PromesaFecha.Value.ToString("yyyy-MM-dd") · @g.PromesaMonto?.ToString("C0")</div>
+                                }
+                            </div>
+                        </li>
+                    }
+                </ul>
+            }
+            <form method="post" asp-page-handler="Gestion" class="mini-form">
+                <div class="grid-3">
+                    <input asp-for="Gestion.Fecha" type="datetime-local" class="input" />
+                    <select asp-for="Gestion.Canal" class="input">
+                        <option value="telefono">Teléfono</option>
+                        <option value="visita">Visita</option>
+                        <option value="correo">Correo</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="sms">SMS</option>
+                    </select>
+                    <select asp-for="Gestion.Resultado" class="input">
+                        @foreach (var r in Enum.GetValues<EstadoGestion>()) { <option value="@r">@r.Label()</option> }
+                    </select>
+                    <input asp-for="Gestion.PersonaContactada" class="input col-span-2" placeholder="Con quién habló" />
+                    <select asp-for="Gestion.GestorId" asp-items="Model.UsuariosList" class="input">
+                        <option value="">Gestor</option>
+                    </select>
+                    <textarea asp-for="Gestion.Descripcion" class="input textarea field-full" placeholder="Qué se dijo"></textarea>
+                    <input asp-for="Gestion.PromesaFecha" type="date" class="input" placeholder="Fecha promesa" />
+                    <input asp-for="Gestion.PromesaMonto" type="number" step="0.01" class="input" placeholder="Monto promesa" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Registrar gestión</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h3>Remates</h3><span class="muted">@Model.Remates.Count</span></div>
+        @if (Model.Remates.Any())
+        {
+            <table class="table">
+                <thead><tr><th>Almoneda</th><th>Fecha</th><th>Lugar</th><th>Avalúo</th><th>Postura</th><th>Fincado</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Remates)
+                    {
+                        <tr>
+                            <td>@r.Almoneda</td>
+                            <td>@r.FechaHora.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@(r.Lugar ?? "—")</td>
+                            <td>@r.ValorAvaluoBase.ToString("C0")</td>
+                            <td>@(r.PosturaLegal?.ToString("C0") ?? "—")</td>
+                            <td>@(r.MontoFincado?.ToString("C0") ?? "—")</td>
+                            <td><span class="badge @r.Estado.BadgeClass()">@r.Estado.Label()</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        <form method="post" asp-page-handler="Remate" class="mini-form">
+            <div class="grid-3">
+                <input asp-for="Remate.Almoneda" type="number" min="1" class="input" placeholder="Almoneda" />
+                <input asp-for="Remate.FechaHora" type="datetime-local" class="input" />
+                <input asp-for="Remate.Lugar" class="input" placeholder="Sala / juzgado" />
+                <input asp-for="Remate.ValorAvaluoBase" type="number" step="0.01" class="input" placeholder="Avalúo" />
+                <input asp-for="Remate.PosturaLegal" type="number" step="0.01" class="input" placeholder="Postura legal" />
+                <select asp-for="Remate.Estado" class="input">
+                    @foreach (var e in Enum.GetValues<EstadoRemate>()) { <option value="@e">@e.Label()</option> }
+                </select>
+                <textarea asp-for="Remate.Observaciones" class="input textarea field-full" placeholder="Observaciones"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Programar remate</button>
+        </form>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(c.Garantia))
+    {
+        <div class="card">
+            <h3>Garantía</h3>
+            <p class="pre-wrap">@c.Garantia</p>
+        </div>
+    }
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

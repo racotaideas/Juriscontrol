@@ -1,0 +1,61 @@
+@page
+@model JurisControl.Web.Pages.Reportes.IndexModel
+@{
+    ViewData["Title"] = "Reportes";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Reportes</h1>
+            <p class="page-sub">Vistas ejecutivas basadas en los datos del despacho. Exportables a impresión con el navegador.</p>
+        </div>
+    </div>
+
+    <div class="grid-3">
+        <a asp-page="Agenda" class="report-card">
+            <div class="report-emoji">📅</div>
+            <h3>Agenda del período</h3>
+            <p>Audiencias y plazos entre dos fechas, ordenados y agrupados.</p>
+        </a>
+        <a asp-page="PlazosVencidos" class="report-card">
+            <div class="report-emoji">⚠️</div>
+            <h3>Plazos vencidos y por vencer</h3>
+            <p>Bandeja de urgencia con antigüedad y responsable.</p>
+        </a>
+        <a asp-page="Actividad" class="report-card">
+            <div class="report-emoji">📈</div>
+            <h3>Actividad por período</h3>
+            <p>Actuaciones + promociones por juicio, con conteo y volumen.</p>
+        </a>
+        <a asp-page="Productividad" class="report-card">
+            <div class="report-emoji">🏅</div>
+            <h3>Productividad por abogado</h3>
+            <p>Asuntos, juicios asignados, promociones firmadas, audiencias asistidas.</p>
+        </a>
+        <a asp-page="AsuntosPorEstado" class="report-card">
+            <div class="report-emoji">📊</div>
+            <h3>Asuntos por estado y materia</h3>
+            <p>Matriz de estados por materia. Base para reporte gerencial.</p>
+        </a>
+        <a asp-page="ClientesTop" class="report-card">
+            <div class="report-emoji">🥇</div>
+            <h3>Clientes top</h3>
+            <p>Clientes con más asuntos activos y valor gestionado.</p>
+        </a>
+
+        @if (Model.ModoCobranza)
+        {
+            <a asp-page="CobranzaCartera" class="report-card">
+                <div class="report-emoji">💼</div>
+                <h3>Cartera por acreedor</h3>
+                <p>Saldo total y núm. de créditos por institución acreedora.</p>
+            </a>
+            <a asp-page="Recuperacion" class="report-card">
+                <div class="report-emoji">💰</div>
+                <h3>Recuperación mensual</h3>
+                <p>Pagos recibidos por mes vs saldo original, con eficiencia.</p>
+            </a>
+        }
+    </div>
+</section>
