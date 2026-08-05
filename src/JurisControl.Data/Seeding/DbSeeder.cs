@@ -18,7 +18,7 @@ public static class DbSeeder
     private static readonly Guid PilotoDespachoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
     private const string PilotoRazonSocial = "Rafael Corona";
     private const string PilotoAdminEmail = "rafael.corona.tavarez@gmail.com";
-    private const string PilotoAdminInitialPassword = "Cambiar1!Yaesto"; // el admin la rota en el primer login
+    private const string PilotoAdminInitialPassword = "Piloto1234"; // fácil para piloto; rotar antes de comercializar
 
     public static async Task SeedAsync(IServiceProvider services)
     {
@@ -100,6 +100,19 @@ public static class DbSeeder
             logger.LogWarning(
                 "Password inicial del admin: '{Password}'. Debe rotarse en el primer acceso.",
                 PilotoAdminInitialPassword);
+        }
+        else if (!await userManager.CheckPasswordAsync(admin, PilotoAdminInitialPassword))
+        {
+            // Reset one-shot durante el piloto: si el password actual no coincide
+            // con el de referencia, se re-alinea. Quitar este bloque cuando exista
+            // la UI de "Cambiar contraseña" y el admin gestione su propia rotación.
+            var token = await userManager.GeneratePasswordResetTokenAsync(admin);
+            var reset = await userManager.ResetPasswordAsync(admin, token, PilotoAdminInitialPassword);
+            if (reset.Succeeded)
+                logger.LogWarning("Password del admin piloto re-alineado a '{Password}'.", PilotoAdminInitialPassword);
+            else
+                logger.LogError("No se pudo re-alinear password del admin: {Errors}",
+                    string.Join(" · ", reset.Errors.Select(e => e.Description)));
         }
     }
 }
