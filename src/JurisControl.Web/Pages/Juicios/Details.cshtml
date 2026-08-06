@@ -155,12 +155,29 @@
                 <ul class="timeline">
                     @foreach (var a in Model.Actuaciones)
                     {
+                        var adjuntos = Model.Documentos.Where(d => d.ActuacionId == a.Id).ToList();
                         <li>
                             <div class="timeline-date">@a.Fecha.ToString("yyyy-MM-dd")</div>
                             <div>
                                 <b>@a.Tipo.Label()</b>: @a.Resumen
                                 @if (a.FechaNotificacion.HasValue) { <span class="muted"> · notificado @a.FechaNotificacion.Value.ToString("yyyy-MM-dd")</span> }
                                 @if (!string.IsNullOrWhiteSpace(a.Detalle)) { <p class="pre-wrap">@a.Detalle</p> }
+                                @if (adjuntos.Any())
+                                {
+                                    <div class="attach-list">
+                                        @foreach (var d in adjuntos)
+                                        {
+                                            <a asp-page="/Documentos/Download" asp-route-id="@d.Id" class="attach">
+                                                📎 @d.Nombre <span class="muted">(@((d.TamanoBytes / 1024.0).ToString("F0")) KB)</span>
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                                <form method="post" enctype="multipart/form-data" asp-page-handler="Adjuntar" class="attach-form">
+                                    <input type="hidden" name="AdjuntarActuacionId" value="@a.Id" />
+                                    <input type="file" name="Adjunto" class="input" style="flex:1;" />
+                                    <button type="submit" class="btn btn-ghost btn-sm">Adjuntar</button>
+                                </form>
                             </div>
                         </li>
                     }
@@ -187,6 +204,7 @@
                 <ul class="timeline">
                     @foreach (var p in Model.Promociones)
                     {
+                        var adjuntos = Model.Documentos.Where(d => d.PromocionId == p.Id).ToList();
                         <li>
                             <div class="timeline-date">@p.FechaPresentacion.ToString("yyyy-MM-dd")</div>
                             <div>
@@ -194,6 +212,22 @@
                                 @if (!string.IsNullOrWhiteSpace(p.NumeroAcuse)) { <span class="muted"> · acuse @p.NumeroAcuse</span> }
                                 @if (p.Firmante is not null) { <span class="muted"> · @p.Firmante.NombreCompleto</span> }
                                 @if (!string.IsNullOrWhiteSpace(p.Contenido)) { <p class="pre-wrap">@p.Contenido</p> }
+                                @if (adjuntos.Any())
+                                {
+                                    <div class="attach-list">
+                                        @foreach (var d in adjuntos)
+                                        {
+                                            <a asp-page="/Documentos/Download" asp-route-id="@d.Id" class="attach">
+                                                📎 @d.Nombre <span class="muted">(@((d.TamanoBytes / 1024.0).ToString("F0")) KB)</span>
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                                <form method="post" enctype="multipart/form-data" asp-page-handler="Adjuntar" class="attach-form">
+                                    <input type="hidden" name="AdjuntarPromocionId" value="@p.Id" />
+                                    <input type="file" name="Adjunto" class="input" style="flex:1;" />
+                                    <button type="submit" class="btn btn-ghost btn-sm">Adjuntar</button>
+                                </form>
                             </div>
                         </li>
                     }

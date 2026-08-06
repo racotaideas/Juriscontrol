@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using JurisControl.Data;
+using JurisControl.Data.Services;
+using JurisControl.Data.TenantContext;
 using JurisControl.Domain.Entities;
 using JurisControl.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +16,12 @@ namespace JurisControl.Web.Pages.Juicios;
 public class DetailsModel : PageModel
 {
     private readonly JurisControlDbContext _db;
-    public DetailsModel(JurisControlDbContext db) => _db = db;
+    private readonly IFileStorage _storage;
+    private readonly ITenantContext _tenant;
+    public DetailsModel(JurisControlDbContext db, IFileStorage storage, ITenantContext tenant)
+    {
+        _db = db; _storage = storage; _tenant = tenant;
+    }
 
     public Juicio Juicio { get; private set; } = null!;
     public Asunto? Asunto { get; private set; }
@@ -24,6 +31,7 @@ public class DetailsModel : PageModel
     public List<Promocion> Promociones { get; private set; } = new();
     public List<Audiencia> Audiencias { get; private set; } = new();
     public List<Plazo> Plazos { get; private set; } = new();
+    public List<Documento> Documentos { get; private set; } = new();
     public List<SelectListItem> UsuariosList { get; private set; } = new();
     public List<SelectListItem> ClientesList { get; private set; } = new();
 
@@ -59,6 +67,13 @@ public class DetailsModel : PageModel
             .OrderBy(a => a.FechaHora).ToListAsync();
         Plazos = await _db.Plazos.AsNoTracking().Where(p => p.JuicioId == id)
             .OrderBy(p => p.FechaVencimiento).ToListAsync();
+
+        var actIds = Actuaciones.Select(a => a.Id).ToHashSet();
+        var promIds = Promociones.Select(p => p.Id).ToHashSet();
+        Documentos = await _db.Documentos.AsNoTracking()
+            .Where(d => (d.ActuacionId != null && actIds.Contains(d.ActuacionId.Value))
+                     || (d.PromocionId != null && promIds.Contains(d.PromocionId.Value)))
+            .ToListAsync();
 
         UsuariosList = await _db.Users.AsNoTracking().Where(u => u.Activo)
             .OrderBy(u => u.NombreCompleto)
@@ -191,6 +206,41 @@ public class DetailsModel : PageModel
         });
         await _db.SaveChangesAsync();
         TempData["Msg"] = "Parte agregada.";
+        return RedirectToPage(new { id = Id });
+    }
+
+    // ---- Adjuntos ----
+    [BindProperty] public IFormFile? Adjunto { get; set; }
+    [BindProperty] public Guid? AdjuntarActuacionId { get; set; }
+    [BindProperty] public Guid? AdjuntarPromocionId { get; set; }
+
+    public async Task<IActionResult> OnPostAdjuntarAsync()
+    {
+        if (!await LoadAsync(Id)) return NotFound();
+        if (Adjunto is null || Adjunto.Length == 0)
+        {
+            TempData["Msg"] = "Selecciona un archivo antes de subir.";
+            return RedirectToPage(new { id = Id });
+        }
+        var despachoId = _tenant.DespachoId ?? Juicio.DespachoId;
+        string storageRef;
+        using (var stream = Adjunto.OpenReadStream())
+            storageRef = await _storage.SaveAsync(despachoId, Adjunto.FileName, stream);
+
+        _db.Documentos.Add(new Documento
+        {
+            AsuntoId = Juicio.AsuntoId,
+            ActuacionId = AdjuntarActuacionId,
+            PromocionId = AdjuntarPromocionId,
+            Nombre = Adjunto.FileName,
+            Categoria = AdjuntarActuacionId.HasValue ? "actuacion" : "promocion",
+            StorageRef = storageRef,
+            ContentType = Adjunto.ContentType,
+            TamanoBytes = Adjunto.Length,
+            CreatedBy = User.Identity?.Name
+        });
+        await _db.SaveChangesAsync();
+        TempData["Msg"] = $"Archivo '{Adjunto.FileName}' adjuntado.";
         return RedirectToPage(new { id = Id });
     }
 

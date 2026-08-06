@@ -25,6 +25,14 @@ public class DocumentoConfiguration : IEntityTypeConfiguration<Documento>
             .HasForeignKey(x => x.AsuntoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        b.HasOne(x => x.Actuacion).WithMany()
+            .HasForeignKey(x => x.ActuacionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        b.HasOne(x => x.Promocion).WithMany()
+            .HasForeignKey(x => x.PromocionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         b.Property(x => x.Nombre).HasMaxLength(300).IsRequired();
         b.Property(x => x.Categoria).HasMaxLength(50).IsRequired();
         b.Property(x => x.StorageRef).HasMaxLength(500).IsRequired();
@@ -33,5 +41,7 @@ public class DocumentoConfiguration : IEntityTypeConfiguration<Documento>
 
         b.HasIndex(x => new { x.DespachoId, x.AsuntoId });
         b.HasIndex(x => new { x.DespachoId, x.ClienteId });
+        b.HasIndex(x => new { x.DespachoId, x.ActuacionId });
+        b.HasIndex(x => new { x.DespachoId, x.PromocionId });
     }
 }

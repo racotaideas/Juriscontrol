@@ -44,6 +44,10 @@ try
 
     builder.Services.AddJurisControlData(connectionString);
 
+    // Storage local para adjuntos: escribe en {ContentRoot}/App_Data/uploads/{despacho}/…
+    builder.Services.AddSingleton<JurisControl.Data.Services.IFileStorage>(
+        _ => new JurisControl.Data.Services.LocalFileStorage(builder.Environment.ContentRootPath));
+
     builder.Services.AddScoped<
         IUserClaimsPrincipalFactory<ApplicationUser>,
         DespachoUserClaimsPrincipalFactory>();

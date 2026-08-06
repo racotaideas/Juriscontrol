@@ -18,6 +18,14 @@ public class Documento : AuditableEntity, ITenantEntity
     public Guid? AsuntoId { get; set; }
     public Asunto? Asunto { get; set; }
 
+    /// <summary>Si el adjunto pertenece a una actuación específica del juzgado.</summary>
+    public Guid? ActuacionId { get; set; }
+    public Actuacion? Actuacion { get; set; }
+
+    /// <summary>Si el adjunto pertenece a una promoción del despacho.</summary>
+    public Guid? PromocionId { get; set; }
+    public Promocion? Promocion { get; set; }
+
     /// <summary>Nombre visible del documento (ej. "Poder notarial 45892.pdf").</summary>
     public string Nombre { get; set; } = string.Empty;
 

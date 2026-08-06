@@ -9,98 +9,64 @@ using Microsoft.Extensions.Logging;
 namespace JurisControl.Data.Seeding;
 
 /// <summary>
-/// Siembra datos ficticios pero realistas para el piloto: 40 clientes,
-/// 50 asuntos con folios secuenciales, ~40 juicios con etapas procesales
-/// que avanzan de enero 2025 a agosto 2026 y actuaciones/promociones/
-/// audiencias/plazos con textos creíbles. También pobla el módulo de cobranza.
+/// Siembra datos ficticios pero realistas para los 3 despachos del piloto.
+/// Cada despacho recibe clientes, asuntos, juicios con etapas procesales
+/// que avanzan de 2025 a 2026, gestiones, pagos, plantillas y gastos.
 ///
-/// Se activa solo si <c>DemoData:Enabled</c> es true en appsettings o env vars.
-/// Idempotente: si ya hay más de 20 asuntos, no hace nada.
-/// Quitar el flag cuando el piloto termine y el sistema esté con datos reales.
+/// Además inserta en el despacho piloto los 6 CASOS FEATURED narrativos
+/// de <see cref="CasosNarrativos"/> — juicios con actuaciones y promociones
+/// escritas en lenguaje jurídico real, desde la demanda hasta la sentencia
+/// (algunos hasta segunda instancia).
+///
+/// Se activa solo si <c>DemoData:Enabled</c> es true. Idempotente por despacho.
 /// </summary>
 public static class DemoDataSeeder
 {
-    private static readonly Guid PilotoDespachoId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    private static readonly Random Rng = new(2026); // seed fijo → mismos datos en re-runs
-
-    // --- Catálogos de datos ficticios ---
+    private static readonly Random Rng = new(2026);
 
     private static readonly string[] JuzgadosCivil =
     {
-        "Juzgado 1° de lo Civil, CDMX",
-        "Juzgado 8° de lo Civil, CDMX",
-        "Juzgado 15° de lo Civil, CDMX",
-        "Juzgado 22° de lo Civil, CDMX",
-        "Juzgado 32° de lo Civil, CDMX",
-        "Juzgado 45° de lo Civil, CDMX",
-        "Juzgado 58° de lo Civil, CDMX"
+        "Juzgado 1° de lo Civil, CDMX", "Juzgado 8° de lo Civil, CDMX",
+        "Juzgado 15° de lo Civil, CDMX", "Juzgado 22° de lo Civil, CDMX",
+        "Juzgado 32° de lo Civil, CDMX", "Juzgado 58° de lo Civil, CDMX"
     };
     private static readonly string[] JuzgadosMercantil =
     {
-        "Juzgado 3° de lo Mercantil, CDMX",
-        "Juzgado 6° de lo Mercantil, CDMX",
-        "Juzgado 10° de lo Mercantil, CDMX",
-        "Juzgado 18° de lo Mercantil, CDMX",
-        "Juzgado 25° de lo Mercantil, CDMX",
+        "Juzgado 3° de lo Mercantil, CDMX", "Juzgado 6° de lo Mercantil, CDMX",
+        "Juzgado 10° de lo Mercantil, CDMX", "Juzgado 18° de lo Mercantil, CDMX",
         "Juzgado 34° de lo Mercantil, CDMX"
     };
     private static readonly string[] JuzgadosFamiliar =
     {
-        "Juzgado 4° de lo Familiar, CDMX",
-        "Juzgado 12° de lo Familiar, CDMX",
-        "Juzgado 19° de lo Familiar, CDMX",
-        "Juzgado 26° de lo Familiar, CDMX"
+        "Juzgado 4° de lo Familiar, CDMX", "Juzgado 12° de lo Familiar, CDMX",
+        "Juzgado 19° de lo Familiar, CDMX"
     };
     private static readonly string[] JuzgadosLaboral =
     {
         "Junta 5 de Conciliación y Arbitraje CDMX",
-        "Juzgado 2° del Trabajo, Centro Federal, CDMX",
-        "Juzgado 7° del Trabajo, Centro Federal, CDMX"
+        "Juzgado 2° del Trabajo, Centro Federal, CDMX"
     };
     private static readonly string[] JuzgadosAmparo =
     {
         "Juzgado 4° de Distrito en Materia Administrativa, CDMX",
-        "Juzgado 9° de Distrito en Materia Civil, CDMX",
-        "Juzgado 12° de Distrito en Materia Penal, CDMX"
+        "Juzgado 9° de Distrito en Materia Civil, CDMX"
     };
 
     private static readonly string[] NombresHombres =
-    {
-        "Roberto", "Carlos", "José", "Luis", "Fernando", "Miguel", "Javier",
-        "Ricardo", "Alejandro", "Eduardo", "Rafael", "Jorge", "Andrés", "Sergio",
-        "Óscar", "Arturo", "Guillermo", "Manuel", "Alberto", "Enrique"
-    };
+    { "Roberto", "Carlos", "José", "Luis", "Fernando", "Miguel", "Javier",
+      "Ricardo", "Alejandro", "Eduardo", "Rafael", "Jorge", "Andrés", "Sergio" };
     private static readonly string[] NombresMujeres =
-    {
-        "María", "Ana", "Patricia", "Sofía", "Gabriela", "Adriana", "Laura",
-        "Mónica", "Claudia", "Verónica", "Alejandra", "Lucía", "Rosa", "Isabel",
-        "Carmen", "Beatriz", "Diana", "Elena", "Fernanda", "Lorena"
-    };
+    { "María", "Ana", "Patricia", "Sofía", "Gabriela", "Adriana", "Laura",
+      "Mónica", "Claudia", "Verónica", "Alejandra", "Lucía", "Rosa", "Isabel" };
     private static readonly string[] Apellidos =
-    {
-        "Hernández", "García", "Martínez", "López", "González", "Rodríguez",
-        "Pérez", "Sánchez", "Ramírez", "Torres", "Flores", "Rivera", "Gómez",
-        "Díaz", "Reyes", "Cruz", "Morales", "Ortiz", "Gutiérrez", "Chávez",
-        "Vázquez", "Jiménez", "Mendoza", "Ruiz", "Aguilar"
-    };
+    { "Hernández", "García", "Martínez", "López", "González", "Rodríguez",
+      "Pérez", "Sánchez", "Ramírez", "Torres", "Flores", "Rivera", "Gómez" };
     private static readonly string[] Empresas =
-    {
-        "Constructora del Valle S.A. de C.V.",
-        "Distribuidora Norte del Golfo S.A. de C.V.",
-        "Servicios Integrales Peninsulares S.C.",
-        "Grupo Corporativo Alameda S.A.P.I.",
-        "Textiles Industriales de México S.A.",
-        "Alimentos Selectos del Bajío S. de R.L.",
-        "Inmobiliaria Reforma 2000 S.A. de C.V.",
-        "Consultores Jurídicos y Contables Asociados S.C.",
-        "Transportes Especializados Roble S.A.",
-        "Metalúrgica del Pacífico S.A. de C.V.",
-        "Editorial Educativa Ateneo S.A.",
-        "Farmacéutica Regional del Centro S.A.",
-        "Ingeniería Aplicada Xochimilco S.C.",
-        "Bebidas Artesanales Cuauhtémoc S.A.",
-        "Refacciones Automotrices Águila S.A. de C.V."
-    };
+    { "Constructora del Valle S.A. de C.V.", "Distribuidora Norte S.A. de C.V.",
+      "Servicios Integrales Peninsulares S.C.", "Grupo Corporativo Alameda S.A.P.I.",
+      "Textiles Industriales de México S.A.", "Alimentos Selectos del Bajío S. de R.L.",
+      "Inmobiliaria Reforma 2000 S.A. de C.V.", "Transportes Especializados S.A.",
+      "Metalúrgica del Pacífico S.A. de C.V.", "Farmacéutica Regional S.A." };
 
     private static readonly (string Tipo, string MateriaKey, string DescripcionBase)[] TiposDeAsunto =
     {
@@ -108,96 +74,10 @@ public static class DemoDataSeeder
         ("Ejecutivo Mercantil",       Materia.Mercantil, "Ejecución de pagaré vencido con intereses moratorios."),
         ("Ordinario Civil",           Materia.Civil,     "Cumplimiento forzoso de contrato de arrendamiento."),
         ("Especial de Desahucio",     Materia.Civil,     "Desocupación de inmueble por falta de pago de rentas."),
-        ("Rescisión de Contrato",     Materia.Civil,     "Rescisión de contrato de compraventa por vicios ocultos."),
         ("Amparo Indirecto",          Materia.Amparo,    "Amparo contra acto de autoridad administrativa."),
-        ("Ordinario Laboral",         Materia.Laboral,   "Reclamo de prestaciones laborales por despido injustificado."),
-        ("Divorcio Necesario",        Materia.Familiar,  "Divorcio con controversia sobre bienes y guarda de menores."),
-        ("Sucesión Intestamentaria",  Materia.Familiar,  "Trámite sucesorio sin testamento previo del de cujus."),
-        ("Cobro de Crédito Bancario", Materia.Cobranza,  "Recuperación de crédito bancario con garantía hipotecaria.")
-    };
-
-    // Etapas típicas por estado (nombre-de-actuación, offset-en-días desde inicio)
-    private static readonly Dictionary<EstadoJuicio, (string Resumen, int Dias, TipoActuacion Tipo)[]> EtapasPorEstado = new()
-    {
-        [EstadoJuicio.Iniciado] = new[]
-        {
-            ("Auto que admite la demanda y ordena emplazar al demandado.", 7, TipoActuacion.Acuerdo),
-            ("Diligencia de emplazamiento por conducto de actuario.", 21, TipoActuacion.Diligencia),
-        },
-        [EstadoJuicio.EnPruebas] = new[]
-        {
-            ("Auto que admite la demanda.", 7, TipoActuacion.Acuerdo),
-            ("Emplazamiento a la parte demandada.", 21, TipoActuacion.Diligencia),
-            ("Auto que tiene por contestada la demanda.", 55, TipoActuacion.Acuerdo),
-            ("Auto que admite pruebas ofrecidas por ambas partes.", 90, TipoActuacion.Acuerdo),
-            ("Desahogo de prueba testimonial.", 115, TipoActuacion.Diligencia),
-        },
-        [EstadoJuicio.Alegatos] = new[]
-        {
-            ("Auto admisorio de demanda.", 7, TipoActuacion.Acuerdo),
-            ("Emplazamiento.", 21, TipoActuacion.Diligencia),
-            ("Contestación tenida por presentada.", 55, TipoActuacion.Acuerdo),
-            ("Auto que admite pruebas.", 90, TipoActuacion.Acuerdo),
-            ("Audiencia de desahogo celebrada.", 130, TipoActuacion.Audiencia),
-            ("Se cita a las partes a formular alegatos.", 165, TipoActuacion.Acuerdo),
-        },
-        [EstadoJuicio.Sentencia] = new[]
-        {
-            ("Auto admisorio.", 7, TipoActuacion.Acuerdo),
-            ("Emplazamiento.", 21, TipoActuacion.Diligencia),
-            ("Contestación.", 55, TipoActuacion.Acuerdo),
-            ("Audiencia de pruebas y alegatos.", 130, TipoActuacion.Audiencia),
-            ("Sentencia definitiva de primera instancia. Se condena a la parte demandada.", 210, TipoActuacion.Sentencia),
-            ("Notificación de sentencia.", 215, TipoActuacion.Notificacion),
-        },
-        [EstadoJuicio.Apelacion] = new[]
-        {
-            ("Auto admisorio.", 7, TipoActuacion.Acuerdo),
-            ("Emplazamiento.", 21, TipoActuacion.Diligencia),
-            ("Contestación.", 55, TipoActuacion.Acuerdo),
-            ("Sentencia definitiva favorable.", 210, TipoActuacion.Sentencia),
-            ("Recurso de apelación admitido y remitido a la Sala.", 240, TipoActuacion.Resolucion),
-            ("Se cita para audiencia de vista.", 275, TipoActuacion.Acuerdo),
-        },
-        [EstadoJuicio.Ejecucion] = new[]
-        {
-            ("Auto admisorio.", 7, TipoActuacion.Acuerdo),
-            ("Emplazamiento.", 21, TipoActuacion.Diligencia),
-            ("Sentencia condenatoria.", 210, TipoActuacion.Sentencia),
-            ("Sentencia ejecutoriada.", 250, TipoActuacion.Resolucion),
-            ("Requerimiento de pago y embargo trabado.", 280, TipoActuacion.Diligencia),
-            ("Se ordena la práctica de avalúo.", 310, TipoActuacion.Acuerdo),
-        },
-        [EstadoJuicio.Concluido] = new[]
-        {
-            ("Auto admisorio.", 7, TipoActuacion.Acuerdo),
-            ("Emplazamiento.", 21, TipoActuacion.Diligencia),
-            ("Sentencia condenatoria.", 210, TipoActuacion.Sentencia),
-            ("Sentencia ejecutoriada.", 250, TipoActuacion.Resolucion),
-            ("Pago total del adeudo. Se ordena el archivo del expediente.", 330, TipoActuacion.Acuerdo),
-        },
-        [EstadoJuicio.Amparo] = new[]
-        {
-            ("Auto admisorio.", 7, TipoActuacion.Acuerdo),
-            ("Sentencia de primera instancia adversa.", 210, TipoActuacion.Sentencia),
-            ("Se promueve juicio de amparo directo.", 220, TipoActuacion.Escrito),
-            ("Admisión del amparo. Autoridad responsable rinde informe.", 250, TipoActuacion.Resolucion),
-        },
-        [EstadoJuicio.Sobreseido] = new[]
-        {
-            ("Auto admisorio.", 7, TipoActuacion.Acuerdo),
-            ("Sobreseimiento por desistimiento del actor.", 60, TipoActuacion.Resolucion),
-        }
-    };
-
-    private static readonly (TipoPromocion Tipo, string Titulo, int OffsetDias)[] PromocionesTipicas =
-    {
-        (TipoPromocion.Demanda,         "Escrito inicial de demanda con anexos.", 0),
-        (TipoPromocion.Contestacion,    "Contestación a la demanda oponiendo excepciones.", 50),
-        (TipoPromocion.Ofrecimiento,    "Ofrecimiento de pruebas documentales y testimoniales.", 80),
-        (TipoPromocion.DesahogoPrueba,  "Escrito para desahogo de prueba pericial.", 110),
-        (TipoPromocion.Alegatos,        "Alegatos de bien probado.", 170),
-        (TipoPromocion.Recurso,         "Recurso de apelación contra sentencia definitiva.", 225)
+        ("Ordinario Laboral",         Materia.Laboral,   "Reclamo por despido injustificado."),
+        ("Divorcio Necesario",        Materia.Familiar,  "Divorcio con controversia."),
+        ("Cobro de Crédito Bancario", Materia.Cobranza,  "Recuperación de crédito con garantía hipotecaria.")
     };
 
     public static async Task SeedAsync(IServiceProvider services, IConfiguration config)
@@ -213,18 +93,31 @@ public static class DemoDataSeeder
 
         var db = sp.GetRequiredService<JurisControlDbContext>();
 
-        var yaHay = await db.Asuntos.CountAsync();
-        if (yaHay >= 20)
+        foreach (var d in DbSeeder.Despachos)
         {
-            logger.LogInformation("DemoDataSeeder skipped: ya hay {Count} asuntos.", yaHay);
-            return;
-        }
+            var yaHay = await db.Asuntos.IgnoreQueryFilters().CountAsync(a => a.DespachoId == d.Id);
+            if (yaHay >= 20)
+            {
+                logger.LogInformation("DemoDataSeeder skip despacho {D}: ya hay {N} asuntos.", d.RazonSocial, yaHay);
+                continue;
+            }
 
-        logger.LogInformation("DemoDataSeeder iniciando siembra ficticia…");
+            logger.LogInformation("DemoDataSeeder sembrando despacho '{D}'…", d.RazonSocial);
+            await SembrarDespachoAsync(db, d, logger);
+        }
+    }
+
+    private static async Task SembrarDespachoAsync(
+        JurisControlDbContext db, DbSeeder.DespachoDemo d, ILogger logger)
+    {
+        // Usuarios del despacho para poder asignar responsables
+        var usuarios = await db.Users.IgnoreQueryFilters()
+            .Where(u => u.DespachoId == d.Id && u.Activo)
+            .ToListAsync();
 
         // --- 1. Clientes ---
         var clientes = new List<Cliente>();
-        for (int i = 0; i < 25; i++)
+        for (int i = 0; i < 20; i++)
         {
             var esHombre = Rng.Next(2) == 0;
             var nombre = esHombre ? NombresHombres[Rng.Next(NombresHombres.Length)]
@@ -233,7 +126,7 @@ public static class DemoDataSeeder
             var apM = Apellidos[Rng.Next(Apellidos.Length)];
             clientes.Add(new Cliente
             {
-                DespachoId = PilotoDespachoId,
+                DespachoId = d.Id,
                 Tipo = TipoCliente.PersonaFisica,
                 Nombre = nombre, ApellidoPaterno = apP, ApellidoMaterno = apM,
                 Rfc = $"{apP.Substring(0, 2).ToUpper()}{apM[0]}{nombre[0]}{Rng.Next(600000, 999999)}",
@@ -241,18 +134,18 @@ public static class DemoDataSeeder
                 TelefonoPrincipal = $"55{Rng.Next(10000000, 99999999)}",
                 Ciudad = "Ciudad de México", Estado = "CDMX",
                 CodigoPostal = $"0{Rng.Next(1000, 9999)}",
-                Direccion = $"Calle {Apellidos[Rng.Next(Apellidos.Length)]} #{Rng.Next(1, 500)}, Col. {new[] { "Roma", "Condesa", "Del Valle", "Polanco", "Doctores", "Narvarte" }[Rng.Next(6)]}",
-                Etiquetas = Rng.Next(4) == 0 ? "VIP,recurrente" : "activo",
+                Direccion = $"Calle {Apellidos[Rng.Next(Apellidos.Length)]} #{Rng.Next(1, 500)}",
+                Etiquetas = Rng.Next(4) == 0 ? "VIP" : "activo",
                 Activo = true, CreatedBy = "demo",
                 CreatedAt = DateTimeOffset.UtcNow.AddMonths(-Rng.Next(1, 18))
             });
         }
-        for (int i = 0; i < 15; i++)
+        for (int i = 0; i < 10; i++)
         {
             var razon = Empresas[i % Empresas.Length];
             clientes.Add(new Cliente
             {
-                DespachoId = PilotoDespachoId,
+                DespachoId = d.Id,
                 Tipo = TipoCliente.PersonaMoral,
                 RazonSocial = razon,
                 NombreComercial = razon.Split(' ')[0],
@@ -261,130 +154,273 @@ public static class DemoDataSeeder
                 CorreoPrincipal = $"contacto@{razon.Split(' ')[0].ToLower()}.mx",
                 TelefonoPrincipal = $"55{Rng.Next(10000000, 99999999)}",
                 Ciudad = "Ciudad de México", Estado = "CDMX",
-                CodigoPostal = $"0{Rng.Next(1000, 9999)}",
-                Etiquetas = Rng.Next(3) == 0 ? "corporativo,retenedor" : "corporativo",
+                Etiquetas = "corporativo",
                 Activo = true, CreatedBy = "demo",
                 CreatedAt = DateTimeOffset.UtcNow.AddMonths(-Rng.Next(1, 18))
             });
         }
         db.Clientes.AddRange(clientes);
         await db.SaveChangesAsync();
-
-        // Refresco de IDs
-        var clientesGuardados = await db.Clientes.AsNoTracking()
+        var clientesGuardados = await db.Clientes.IgnoreQueryFilters()
+            .Where(c => c.DespachoId == d.Id)
             .OrderByDescending(c => c.CreatedAt).Take(clientes.Count).ToListAsync();
 
-        // --- 2. Contador de folios (para no colisionar con futuros manuales) ---
-        var contador2025 = new ContadorFolio
-        {
-            DespachoId = PilotoDespachoId, Anio = 2025, UltimoNumero = 0,
-            UpdatedAt = DateTimeOffset.UtcNow
-        };
-        var contador2026 = new ContadorFolio
-        {
-            DespachoId = PilotoDespachoId, Anio = 2026, UltimoNumero = 0,
-            UpdatedAt = DateTimeOffset.UtcNow
-        };
-        var existente2025 = await db.ContadoresFolio.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(c => c.DespachoId == PilotoDespachoId && c.Anio == 2025);
-        var existente2026 = await db.ContadoresFolio.IgnoreQueryFilters()
-            .FirstOrDefaultAsync(c => c.DespachoId == PilotoDespachoId && c.Anio == 2026);
-        if (existente2025 is not null) contador2025 = existente2025;
-        else db.ContadoresFolio.Add(contador2025);
-        if (existente2026 is not null) contador2026 = existente2026;
-        else db.ContadoresFolio.Add(contador2026);
-        await db.SaveChangesAsync();
+        // Contadores de folio
+        var contador2025 = await EnsureContadorAsync(db, d.Id, 2025);
+        var contador2026 = await EnsureContadorAsync(db, d.Id, 2026);
 
-        // --- 3. Asuntos ---
-        var estadosDistribucion = new[]
+        // --- 2. CASOS FEATURED (solo en el despacho piloto principal) ---
+        if (d.Id == DbSeeder.Despachos[0].Id)
         {
-            EstadoAsunto.Activo, EstadoAsunto.Activo, EstadoAsunto.Activo, EstadoAsunto.Activo,
-            EstadoAsunto.Asignado, EstadoAsunto.Asignado,
-            EstadoAsunto.Recibido,
-            EstadoAsunto.EnEspera,
-            EstadoAsunto.Cerrado, EstadoAsunto.Cerrado,
+            await SembrarCasosFeaturedAsync(db, d, clientesGuardados, usuarios,
+                contador2025, contador2026, logger);
+        }
+
+        // --- 3. Asuntos "de fondo" para dar volumen ---
+        var (asuntos, juicios, actuaciones, promociones, audiencias, plazos) =
+            await GenerarAsuntosDeFondoAsync(db, d, clientesGuardados, usuarios,
+                contador2025, contador2026);
+
+        // --- 4. Cobranza (solo si el despacho tiene modo cobranza) ---
+        if (d.ModoCobranza)
+        {
+            await SembrarCobranzaAsync(db, d, asuntos, clientesGuardados);
+        }
+
+        // --- 5. Plantillas iniciales (solo en el piloto principal) ---
+        if (d.Id == DbSeeder.Despachos[0].Id)
+        {
+            await SembrarPlantillasAsync(db, d);
+        }
+
+        // --- 6. Gastos ---
+        await SembrarGastosAsync(db, d, juicios);
+
+        await db.SaveChangesAsync();
+        logger.LogInformation("Despacho '{D}' listo: {C} clientes, {A} asuntos, {J} juicios.",
+            d.RazonSocial, clientes.Count, asuntos.Count, juicios.Count);
+    }
+
+    private static async Task<ContadorFolio> EnsureContadorAsync(
+        JurisControlDbContext db, Guid despachoId, int anio)
+    {
+        var existente = await db.ContadoresFolio.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(c => c.DespachoId == despachoId && c.Anio == anio);
+        if (existente is not null) return existente;
+        var nuevo = new ContadorFolio
+        {
+            DespachoId = despachoId, Anio = anio, UltimoNumero = 0,
+            UpdatedAt = DateTimeOffset.UtcNow
         };
-        var estadosJuicioDistribucion = new[]
+        db.ContadoresFolio.Add(nuevo);
+        await db.SaveChangesAsync();
+        return nuevo;
+    }
+
+    // ============================================================
+    // CASOS FEATURED — historias narrativas
+    // ============================================================
+    private static async Task SembrarCasosFeaturedAsync(
+        JurisControlDbContext db, DbSeeder.DespachoDemo d,
+        List<Cliente> clientes, List<ApplicationUser> usuarios,
+        ContadorFolio contador2025, ContadorFolio contador2026,
+        ILogger logger)
+    {
+        var fechaHoy = DateTime.UtcNow.Date;
+
+        foreach (var caso in CasosNarrativos.Casos)
+        {
+            var fechaInicio = fechaHoy.AddDays(-caso.DiasInicioAtras);
+            var anioFolio = fechaInicio.Year;
+            var cliente = clientes[Rng.Next(clientes.Count)];
+            var responsable = usuarios.Count > 0 ? usuarios[Rng.Next(usuarios.Count)] : null;
+
+            int folioNumero;
+            if (anioFolio == 2025) { contador2025.UltimoNumero++; folioNumero = contador2025.UltimoNumero; }
+            else { contador2026.UltimoNumero++; folioNumero = contador2026.UltimoNumero; }
+
+            var asunto = new Asunto
+            {
+                DespachoId = d.Id,
+                Folio = $"JC-{anioFolio}-{folioNumero:D4}",
+                Titulo = "★ " + caso.Titulo,
+                MateriaKey = caso.Materia,
+                ClienteId = cliente.Id,
+                ResponsableId = responsable?.Id,
+                Estado = caso.EstadoAsuntoFinal,
+                FechaRecepcion = new DateTimeOffset(fechaInicio, TimeSpan.Zero),
+                Descripcion = caso.Descripcion,
+                Cuantia = caso.Cuantia > 0 ? caso.Cuantia : null,
+                Prioridad = 1,
+                Etiquetas = "featured,demo",
+                EsCobranza = caso.Materia == Materia.Cobranza,
+                CreatedBy = "demo-narrativo",
+                CreatedAt = new DateTimeOffset(fechaInicio, TimeSpan.Zero)
+            };
+            db.Asuntos.Add(asunto);
+            await db.SaveChangesAsync();
+
+            var juicioFechaInicio = fechaInicio.AddDays(3);
+            var juicioAnio = juicioFechaInicio.Year;
+            var numExp = Rng.Next(100, 999);
+
+            var juicio = new Juicio
+            {
+                DespachoId = d.Id,
+                AsuntoId = asunto.Id,
+                NumeroExpediente = $"{numExp}/{juicioAnio}",
+                Juzgado = caso.Juzgado,
+                TipoJuicio = caso.TipoJuicio,
+                MateriaKey = caso.Materia,
+                Estado = caso.EstadoJuicioFinal,
+                FechaInicio = DateOnly.FromDateTime(juicioFechaInicio),
+                FechaConclusion = caso.EstadoJuicioFinal == EstadoJuicio.Concluido
+                    ? DateOnly.FromDateTime(juicioFechaInicio.AddDays(caso.Actuaciones.Last().OffsetDias))
+                    : null,
+                Cuantia = caso.Cuantia > 0 ? caso.Cuantia : null,
+                Descripcion = caso.Descripcion,
+                CreatedBy = "demo-narrativo",
+                CreatedAt = new DateTimeOffset(juicioFechaInicio, TimeSpan.Zero)
+            };
+            db.Juicios.Add(juicio);
+            await db.SaveChangesAsync();
+
+            // Partes: Actor (nuestro cliente) + Demandado (el mencionado en el caso)
+            db.PartesJuicio.Add(new ParteJuicio
+            {
+                DespachoId = d.Id, JuicioId = juicio.Id, Rol = RolProcesal.Actor,
+                ClienteId = cliente.Id, NombreLibre = caso.NombreActor,
+                CreatedBy = "demo-narrativo", CreatedAt = juicio.CreatedAt
+            });
+            db.PartesJuicio.Add(new ParteJuicio
+            {
+                DespachoId = d.Id, JuicioId = juicio.Id, Rol = RolProcesal.Demandado,
+                NombreLibre = caso.NombreDemandado,
+                Representante = $"Lic. {Apellidos[Rng.Next(Apellidos.Length)]}",
+                CreatedBy = "demo-narrativo", CreatedAt = juicio.CreatedAt
+            });
+
+            // Actuaciones con texto rico
+            foreach (var a in caso.Actuaciones)
+            {
+                var fecha = juicioFechaInicio.AddDays(a.OffsetDias);
+                if (fecha > fechaHoy) continue;
+                db.Actuaciones.Add(new Actuacion
+                {
+                    DespachoId = d.Id, JuicioId = juicio.Id,
+                    Tipo = a.Tipo, Fecha = DateOnly.FromDateTime(fecha),
+                    Resumen = a.Resumen, Detalle = a.Detalle,
+                    CreatedBy = "demo-narrativo",
+                    CreatedAt = new DateTimeOffset(fecha, TimeSpan.Zero)
+                });
+            }
+
+            // Promociones
+            foreach (var p in caso.Promociones)
+            {
+                var fecha = juicioFechaInicio.AddDays(p.OffsetDias);
+                if (fecha > fechaHoy) continue;
+                db.Promociones.Add(new Promocion
+                {
+                    DespachoId = d.Id, JuicioId = juicio.Id,
+                    Tipo = p.Tipo, FechaPresentacion = DateOnly.FromDateTime(fecha),
+                    Titulo = p.Titulo, Contenido = p.Contenido,
+                    FirmanteId = responsable?.Id,
+                    NumeroAcuse = $"AC-{Rng.Next(100000, 999999)}",
+                    CreatedBy = "demo-narrativo",
+                    CreatedAt = new DateTimeOffset(fecha, TimeSpan.Zero)
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        logger.LogInformation("{N} casos featured sembrados en '{D}'.",
+            CasosNarrativos.Casos.Length, d.RazonSocial);
+    }
+
+    // ============================================================
+    // Asuntos de fondo (volumen aleatorio)
+    // ============================================================
+    private static async Task<(List<Asunto>, List<Juicio>, List<Actuacion>, List<Promocion>, List<Audiencia>, List<Plazo>)>
+        GenerarAsuntosDeFondoAsync(
+            JurisControlDbContext db, DbSeeder.DespachoDemo d,
+            List<Cliente> clientes, List<ApplicationUser> usuarios,
+            ContadorFolio contador2025, ContadorFolio contador2026)
+    {
+        var estadosAsuntoDist = new[]
+        {
+            EstadoAsunto.Activo, EstadoAsunto.Activo, EstadoAsunto.Activo,
+            EstadoAsunto.Asignado, EstadoAsunto.Recibido,
+            EstadoAsunto.EnEspera, EstadoAsunto.Cerrado, EstadoAsunto.Cerrado
+        };
+        var estadosJuicioDist = new[]
         {
             EstadoJuicio.Iniciado, EstadoJuicio.EnPruebas, EstadoJuicio.EnPruebas,
-            EstadoJuicio.Alegatos, EstadoJuicio.Alegatos,
-            EstadoJuicio.Sentencia, EstadoJuicio.Sentencia,
-            EstadoJuicio.Apelacion,
-            EstadoJuicio.Ejecucion,
-            EstadoJuicio.Concluido, EstadoJuicio.Concluido,
-            EstadoJuicio.Amparo
+            EstadoJuicio.Alegatos, EstadoJuicio.Sentencia,
+            EstadoJuicio.Apelacion, EstadoJuicio.Ejecucion,
+            EstadoJuicio.Concluido, EstadoJuicio.Concluido
         };
 
         var asuntos = new List<Asunto>();
         var juicios = new List<Juicio>();
-        var partes = new List<ParteJuicio>();
         var actuaciones = new List<Actuacion>();
         var promociones = new List<Promocion>();
         var audiencias = new List<Audiencia>();
         var plazos = new List<Plazo>();
 
         var fechaHoy = DateTime.UtcNow.Date;
-        var fechaHoyOnly = DateOnly.FromDateTime(fechaHoy);
+        var totalAsuntos = 30;
 
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < totalAsuntos; i++)
         {
-            var cliente = clientesGuardados[Rng.Next(clientesGuardados.Count)];
+            var cliente = clientes[Rng.Next(clientes.Count)];
             var tipo = TiposDeAsunto[Rng.Next(TiposDeAsunto.Length)];
-            var estadoAsunto = estadosDistribucion[i % estadosDistribucion.Length];
+            var estadoAsunto = estadosAsuntoDist[i % estadosAsuntoDist.Length];
 
-            // Fecha de recepción: mezcla enero 2025 – julio 2026
-            var mesesAtras = Rng.Next(1, 19);
+            var mesesAtras = Rng.Next(1, 18);
             var fechaRecepcion = fechaHoy.AddMonths(-mesesAtras).AddDays(-Rng.Next(0, 28));
             var anioFolio = fechaRecepcion.Year;
+
             int folioNumero;
             if (anioFolio == 2025) { contador2025.UltimoNumero++; folioNumero = contador2025.UltimoNumero; }
             else { contador2026.UltimoNumero++; folioNumero = contador2026.UltimoNumero; }
 
-            var esCobranza = tipo.MateriaKey == Materia.Cobranza
-                             || (tipo.MateriaKey == Materia.Mercantil && Rng.Next(3) == 0);
+            var responsable = usuarios.Count > 0 && Rng.Next(3) > 0
+                ? usuarios[Rng.Next(usuarios.Count)] : null;
 
             var asunto = new Asunto
             {
-                DespachoId = PilotoDespachoId,
+                DespachoId = d.Id,
                 Folio = $"JC-{anioFolio}-{folioNumero:D4}",
                 Titulo = $"{tipo.Tipo} · {cliente.DisplayName}",
                 MateriaKey = tipo.MateriaKey,
                 ClienteId = cliente.Id,
+                ResponsableId = responsable?.Id,
                 Estado = estadoAsunto,
                 FechaRecepcion = new DateTimeOffset(fechaRecepcion, TimeSpan.Zero),
-                Descripcion = tipo.DescripcionBase + $" Cuantía aproximada MXN {Rng.Next(50, 3500) * 1000}.",
+                Descripcion = tipo.DescripcionBase,
                 Cuantia = Rng.Next(50, 3500) * 1000,
                 Prioridad = Rng.Next(1, 6),
-                Etiquetas = Rng.Next(4) == 0 ? "urgente" : (Rng.Next(3) == 0 ? "retenedor" : ""),
-                EsCobranza = esCobranza,
+                Etiquetas = Rng.Next(4) == 0 ? "urgente" : "",
+                EsCobranza = tipo.MateriaKey == Materia.Cobranza || (tipo.MateriaKey == Materia.Mercantil && Rng.Next(3) == 0),
                 FechaCierre = estadoAsunto == EstadoAsunto.Cerrado
-                    ? new DateTimeOffset(fechaRecepcion.AddDays(Rng.Next(180, 500)), TimeSpan.Zero)
-                    : null,
+                    ? new DateTimeOffset(fechaRecepcion.AddDays(Rng.Next(180, 500)), TimeSpan.Zero) : null,
                 CreatedBy = "demo",
                 CreatedAt = new DateTimeOffset(fechaRecepcion, TimeSpan.Zero)
             };
             asuntos.Add(asunto);
         }
-
         db.Asuntos.AddRange(asuntos);
         await db.SaveChangesAsync();
 
-        // --- 4. Juicios + toda la carnita procesal ---
-        var asuntosGuardados = asuntos;
-        int folio2025Cursor = 100;
-        int folio2026Cursor = 100;
-
-        foreach (var asunto in asuntosGuardados)
+        foreach (var asunto in asuntos)
         {
-            // 80% de los asuntos activos/asignados/alegatos/etc. tienen un juicio
-            var creaJuicio = asunto.Estado != EstadoAsunto.Recibido
-                             && asunto.Estado != EstadoAsunto.Cancelado
-                             && Rng.Next(10) < 8;
-            if (!creaJuicio) continue;
+            if (asunto.Estado == EstadoAsunto.Recibido || asunto.Estado == EstadoAsunto.Cancelado) continue;
+            if (Rng.Next(10) > 7) continue;
 
             var estadoJuicio = asunto.Estado == EstadoAsunto.Cerrado
                 ? EstadoJuicio.Concluido
-                : estadosJuicioDistribucion[Rng.Next(estadosJuicioDistribucion.Length)];
+                : estadosJuicioDist[Rng.Next(estadosJuicioDist.Length)];
 
             var juzgados = asunto.MateriaKey switch
             {
@@ -397,258 +433,177 @@ public static class DemoDataSeeder
             };
 
             var fechaInicio = asunto.FechaRecepcion.AddDays(Rng.Next(5, 30)).Date;
-            var anioExp = fechaInicio.Year;
-            var numExp = anioExp == 2025 ? ++folio2025Cursor : ++folio2026Cursor;
-
-            var tipoJuicio = asunto.MateriaKey switch
-            {
-                Materia.Mercantil => Rng.Next(2) == 0 ? "Ordinario Mercantil" : "Ejecutivo Mercantil",
-                Materia.Cobranza => "Ejecutivo Mercantil con garantía",
-                Materia.Civil => Rng.Next(3) switch { 0 => "Ordinario Civil", 1 => "Especial de Desahucio", _ => "Rescisión de Contrato" },
-                Materia.Familiar => Rng.Next(2) == 0 ? "Divorcio Necesario" : "Sucesión Intestamentaria",
-                Materia.Laboral => "Ordinario Laboral",
-                Materia.Amparo => "Amparo Indirecto",
-                _ => "Ordinario Civil"
-            };
 
             var juicio = new Juicio
             {
-                DespachoId = PilotoDespachoId,
+                DespachoId = d.Id,
                 AsuntoId = asunto.Id,
-                NumeroExpediente = $"{numExp}/{anioExp}",
+                NumeroExpediente = $"{Rng.Next(100, 900)}/{fechaInicio.Year}",
                 Juzgado = juzgados[Rng.Next(juzgados.Length)],
-                TipoJuicio = tipoJuicio,
+                TipoJuicio = "Ordinario",
                 MateriaKey = asunto.MateriaKey,
                 Estado = estadoJuicio,
                 FechaInicio = DateOnly.FromDateTime(fechaInicio),
                 FechaConclusion = estadoJuicio == EstadoJuicio.Concluido
-                    ? DateOnly.FromDateTime(fechaInicio.AddDays(Rng.Next(300, 500)))
-                    : null,
+                    ? DateOnly.FromDateTime(fechaInicio.AddDays(Rng.Next(200, 400))) : null,
                 Cuantia = asunto.Cuantia,
-                Descripcion = asunto.Descripcion,
-                Observaciones = Rng.Next(3) == 0 ? "Parte contraria ha manifestado interés en llegar a un convenio." : null,
                 CreatedBy = "demo",
                 CreatedAt = new DateTimeOffset(fechaInicio, TimeSpan.Zero)
             };
             juicios.Add(juicio);
+        }
+        db.Juicios.AddRange(juicios);
+        await db.SaveChangesAsync();
 
-            // Partes: actor (nuestro cliente) + demandado (parte externa)
-            partes.Add(new ParteJuicio
+        foreach (var j in juicios)
+        {
+            var etapas = new[]
             {
-                DespachoId = PilotoDespachoId,
-                JuicioId = juicio.Id,
-                Rol = RolProcesal.Actor,
-                ClienteId = asunto.ClienteId,
-                CreatedBy = "demo", CreatedAt = juicio.CreatedAt
-            });
-            partes.Add(new ParteJuicio
+                (7, TipoActuacion.Acuerdo, "Auto que admite la demanda."),
+                (21, TipoActuacion.Diligencia, "Emplazamiento a la parte demandada."),
+                (55, TipoActuacion.Acuerdo, "Contestación tenida por presentada."),
+                (90, TipoActuacion.Acuerdo, "Auto que admite pruebas."),
+                (150, TipoActuacion.Audiencia, "Audiencia de desahogo celebrada."),
+                (210, TipoActuacion.Sentencia, "Sentencia definitiva.")
+            };
+            foreach (var (dias, tipo, resumen) in etapas)
             {
-                DespachoId = PilotoDespachoId,
-                JuicioId = juicio.Id,
-                Rol = RolProcesal.Demandado,
-                NombreLibre = $"{NombresHombres[Rng.Next(NombresHombres.Length)]} {Apellidos[Rng.Next(Apellidos.Length)]} {Apellidos[Rng.Next(Apellidos.Length)]}",
-                Representante = Rng.Next(2) == 0 ? $"Lic. {Apellidos[Rng.Next(Apellidos.Length)]}" : null,
-                CreatedBy = "demo", CreatedAt = juicio.CreatedAt
-            });
-
-            // Actuaciones según etapa
-            var etapas = EtapasPorEstado[estadoJuicio];
-            foreach (var etapa in etapas)
-            {
-                var fecha = fechaInicio.AddDays(etapa.Dias);
-                if (fecha > fechaHoy) continue; // no dar actuaciones del futuro
+                var fecha = j.FechaInicio.AddDays(dias);
+                if (fecha.ToDateTime(TimeOnly.MinValue) > fechaHoy) break;
                 actuaciones.Add(new Actuacion
                 {
-                    DespachoId = PilotoDespachoId,
-                    JuicioId = juicio.Id,
-                    Tipo = etapa.Tipo,
-                    Fecha = DateOnly.FromDateTime(fecha),
-                    FechaNotificacion = Rng.Next(3) == 0 ? DateOnly.FromDateTime(fecha.AddDays(Rng.Next(1, 4))) : null,
-                    Resumen = etapa.Resumen,
-                    Detalle = Rng.Next(3) == 0 ? "Se agregaron copias de traslado al expediente." : null,
+                    DespachoId = d.Id, JuicioId = j.Id, Tipo = tipo,
+                    Fecha = fecha, Resumen = resumen,
                     CreatedBy = "demo",
-                    CreatedAt = new DateTimeOffset(fecha, TimeSpan.Zero)
+                    CreatedAt = new DateTimeOffset(fecha, TimeOnly.MinValue, TimeSpan.Zero)
                 });
             }
 
-            // Promociones del despacho
-            var numPromociones = Math.Min(PromocionesTipicas.Length, etapas.Length);
-            for (int p = 0; p < numPromociones; p++)
+            // Audiencias
+            var numAud = Rng.Next(1, 3);
+            for (int a = 0; a < numAud; a++)
             {
-                var prom = PromocionesTipicas[p];
-                var fecha = fechaInicio.AddDays(prom.OffsetDias);
-                if (fecha > fechaHoy) continue;
-                promociones.Add(new Promocion
-                {
-                    DespachoId = PilotoDespachoId,
-                    JuicioId = juicio.Id,
-                    Tipo = prom.Tipo,
-                    FechaPresentacion = DateOnly.FromDateTime(fecha),
-                    Titulo = prom.Titulo,
-                    Contenido = "Se presenta ante el juzgado con original y copia para acuse.",
-                    NumeroAcuse = $"AC-{Rng.Next(100000, 999999)}",
-                    CreatedBy = "demo",
-                    CreatedAt = new DateTimeOffset(fecha, TimeSpan.Zero)
-                });
-            }
-
-            // Audiencias — 1 a 3, alguna futura
-            var numAudiencias = Rng.Next(1, 4);
-            for (int a = 0; a < numAudiencias; a++)
-            {
-                var offset = 90 + a * 60 + Rng.Next(-15, 30);
-                var fechaHora = fechaInicio.AddDays(offset).AddHours(9 + Rng.Next(0, 8));
-                var estadoAud = fechaHora < fechaHoy
-                    ? (Rng.Next(4) == 0 ? EstadoAudiencia.Diferida : EstadoAudiencia.Celebrada)
-                    : EstadoAudiencia.Programada;
+                var offset = 60 + a * 60 + Rng.Next(-15, 30);
+                var fechaHora = j.FechaInicio.ToDateTime(TimeOnly.MinValue).AddDays(offset).AddHours(9 + Rng.Next(0, 8));
+                var estadoAud = fechaHora < fechaHoy ? EstadoAudiencia.Celebrada : EstadoAudiencia.Programada;
                 audiencias.Add(new Audiencia
                 {
-                    DespachoId = PilotoDespachoId,
-                    JuicioId = juicio.Id,
+                    DespachoId = d.Id, JuicioId = j.Id,
                     FechaHora = fechaHora,
-                    Tipo = new[] { "Audiencia inicial", "Audiencia de pruebas", "Audiencia de conciliación", "Audiencia de alegatos" }[Rng.Next(4)],
+                    Tipo = new[] { "Audiencia inicial", "Audiencia de pruebas", "Audiencia de conciliación" }[Rng.Next(3)],
                     Lugar = $"Sala {Rng.Next(1, 8)}",
                     Estado = estadoAud,
-                    Resultado = estadoAud == EstadoAudiencia.Celebrada ? "Se desahogaron las pruebas ofrecidas." : null,
                     CreatedBy = "demo",
-                    CreatedAt = new DateTimeOffset(fechaInicio, TimeSpan.Zero)
+                    CreatedAt = new DateTimeOffset(j.FechaInicio.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)
                 });
             }
 
-            // Plazos: 1-3, mezcla de cumplidos/vencidos/abiertos
-            var numPlazos = Rng.Next(1, 4);
-            for (int pl = 0; pl < numPlazos; pl++)
+            // Plazos
+            var numPl = Rng.Next(1, 3);
+            for (int p = 0; p < numPl; p++)
             {
                 var dias = new[] { 3, 5, 8, 9, 10, 15 }[Rng.Next(6)];
-                var fechaInicioPlazo = fechaInicio.AddDays(30 + pl * 50 + Rng.Next(0, 30));
-                var fechaVenc = fechaInicioPlazo.AddDays(dias);
-                var estadoPl = fechaVenc < fechaHoy
+                var fechaInicioP = j.FechaInicio.ToDateTime(TimeOnly.MinValue).AddDays(30 + p * 50);
+                var fechaVenc = fechaInicioP.AddDays(dias);
+                var estadoP = fechaVenc < fechaHoy
                     ? (Rng.Next(3) == 0 ? EstadoPlazo.Vencido : EstadoPlazo.Cumplido)
                     : EstadoPlazo.Abierto;
                 plazos.Add(new Plazo
                 {
-                    DespachoId = PilotoDespachoId,
-                    JuicioId = juicio.Id,
-                    Descripcion = new[] { "Contestar demanda", "Ofrecer pruebas", "Desahogar prevención", "Interponer recurso", "Alegatos", "Presentar prueba pericial" }[Rng.Next(6)],
-                    FechaInicio = DateOnly.FromDateTime(fechaInicioPlazo),
+                    DespachoId = d.Id, JuicioId = j.Id,
+                    Descripcion = new[] { "Contestar demanda", "Ofrecer pruebas", "Interponer recurso", "Alegatos" }[Rng.Next(4)],
+                    FechaInicio = DateOnly.FromDateTime(fechaInicioP),
                     FechaVencimiento = DateOnly.FromDateTime(fechaVenc),
-                    DiasOriginales = dias,
-                    DiasHabiles = true,
-                    Estado = estadoPl,
-                    FechaCumplimiento = estadoPl == EstadoPlazo.Cumplido
-                        ? new DateTimeOffset(fechaVenc.AddDays(-Rng.Next(0, dias)), TimeSpan.Zero) : null,
+                    DiasOriginales = dias, DiasHabiles = true, Estado = estadoP,
                     CreatedBy = "demo",
-                    CreatedAt = new DateTimeOffset(fechaInicioPlazo, TimeSpan.Zero)
+                    CreatedAt = new DateTimeOffset(fechaInicioP, TimeSpan.Zero)
                 });
             }
         }
-
-        db.Juicios.AddRange(juicios);
-        await db.SaveChangesAsync();
-        db.PartesJuicio.AddRange(partes);
         db.Actuaciones.AddRange(actuaciones);
         db.Promociones.AddRange(promociones);
         db.Audiencias.AddRange(audiencias);
         db.Plazos.AddRange(plazos);
         await db.SaveChangesAsync();
 
-        // --- 5. Módulo cobranza para asuntos EsCobranza ---
-        var asuntosCobranza = asuntosGuardados.Where(a => a.EsCobranza).Take(12).ToList();
-        var creditos = new List<Credito>();
-        foreach (var a in asuntosCobranza)
+        return (asuntos, juicios, actuaciones, promociones, audiencias, plazos);
+    }
+
+    private static async Task SembrarCobranzaAsync(
+        JurisControlDbContext db, DbSeeder.DespachoDemo d,
+        List<Asunto> asuntos, List<Cliente> clientes)
+    {
+        var fechaHoy = DateTime.UtcNow.Date;
+        var asuntosCob = asuntos.Where(a => a.EsCobranza).Take(5).ToList();
+        foreach (var a in asuntosCob)
         {
-            var monto = (decimal)Rng.Next(100, 4000) * 1000;
+            var monto = (decimal)Rng.Next(100, 3000) * 1000;
             var saldo = a.Estado == EstadoAsunto.Cerrado ? 0 : monto * (decimal)(0.3 + Rng.NextDouble() * 0.7);
-            var cliente = clientesGuardados.First(c => c.Id == a.ClienteId);
-            creditos.Add(new Credito
+            var cliente = clientes.First(c => c.Id == a.ClienteId);
+
+            var credito = new Credito
             {
-                DespachoId = PilotoDespachoId,
-                AsuntoId = a.Id,
+                DespachoId = d.Id, AsuntoId = a.Id,
                 DeudorClienteId = Rng.Next(2) == 0 ? cliente.Id : null,
-                NombreDeudor = Rng.Next(2) == 0 ? cliente.DisplayName : $"{NombresHombres[Rng.Next(NombresHombres.Length)]} {Apellidos[Rng.Next(Apellidos.Length)]}",
+                NombreDeudor = cliente.DisplayName,
                 NumeroCredito = $"CR-{Rng.Next(100000, 999999)}",
-                Acreedor = new[] { "Banco del Norte S.A.", "HSBC México", "BBVA Bancomer", "Santander Serfin", "Institución Financiera Aurora" }[Rng.Next(5)],
+                Acreedor = new[] { "Banco del Norte S.A.", "HSBC México", "BBVA Bancomer" }[Rng.Next(3)],
                 Tipo = (TipoCredito)Rng.Next(0, 8),
-                Estado = saldo == 0 ? EstadoCredito.Recuperado
-                          : (a.Estado == EstadoAsunto.Activo ? EstadoCredito.Judicial : EstadoCredito.Cartera),
+                Estado = saldo == 0 ? EstadoCredito.Recuperado : EstadoCredito.Judicial,
                 MontoOriginal = monto,
                 SaldoActual = Math.Round(saldo, 2),
                 TasaInteres = (decimal)(0.10 + Rng.NextDouble() * 0.20),
                 FechaOrigen = DateOnly.FromDateTime(a.FechaRecepcion.AddMonths(-Rng.Next(6, 24)).Date),
-                FechaVencimiento = DateOnly.FromDateTime(a.FechaRecepcion.AddDays(-30).Date),
                 DiasMora = Rng.Next(90, 900),
-                Garantia = Rng.Next(2) == 0 ? "Inmueble ubicado en Col. Roma Norte, CDMX, con valor de avalúo MXN 3,200,000." : "Aval solidario del Sr. " + Apellidos[Rng.Next(Apellidos.Length)],
-                CreatedBy = "demo",
-                CreatedAt = a.CreatedAt
-            });
-        }
-        db.Creditos.AddRange(creditos);
-        await db.SaveChangesAsync();
+                Garantia = "Inmueble ubicado en la CDMX, valor de avalúo aproximado MXN 3,500,000.",
+                CreatedBy = "demo", CreatedAt = a.CreatedAt
+            };
+            db.Creditos.Add(credito);
+            await db.SaveChangesAsync();
 
-        // Pagos y gestiones para créditos activos
-        var pagos = new List<PagoCobranza>();
-        var gestiones = new List<GestionCobranza>();
-        foreach (var c in creditos)
-        {
-            // 1-4 gestiones por crédito
-            var numGest = Rng.Next(1, 5);
-            for (int g = 0; g < numGest; g++)
+            // Gestiones y pagos
+            for (int i = 0; i < Rng.Next(1, 4); i++)
             {
                 var fechaG = fechaHoy.AddDays(-Rng.Next(1, 300));
-                gestiones.Add(new GestionCobranza
+                db.GestionesCobranza.Add(new GestionCobranza
                 {
-                    DespachoId = PilotoDespachoId,
-                    CreditoId = c.Id,
+                    DespachoId = d.Id, CreditoId = credito.Id,
                     Fecha = fechaG,
                     Canal = new[] { "telefono", "visita", "whatsapp", "correo" }[Rng.Next(4)],
                     Resultado = (EstadoGestion)Rng.Next(0, 6),
-                    PersonaContactada = $"{NombresMujeres[Rng.Next(NombresMujeres.Length)]} {Apellidos[Rng.Next(Apellidos.Length)]}",
-                    Descripcion = new[]
-                    {
-                        "Se contactó al deudor. Manifestó dificultades económicas por pérdida de empleo.",
-                        "Deudor promete cubrir el adeudo a más tardar el próximo mes.",
-                        "No fue posible localizar al deudor en el domicilio registrado.",
-                        "Se envió correo de recordatorio con propuesta de reestructura.",
-                        "Deudor rechaza cualquier convenio; solicita se continúe el trámite judicial."
-                    }[Rng.Next(5)],
+                    Descripcion = "Se contactó al deudor. Manifestó dificultades económicas.",
                     CreatedBy = "demo",
                     CreatedAt = new DateTimeOffset(fechaG, TimeSpan.Zero)
                 });
             }
-
-            // 0-3 pagos parciales
-            var numPagos = Rng.Next(0, 4);
-            for (int p = 0; p < numPagos; p++)
+            for (int i = 0; i < Rng.Next(0, 3); i++)
             {
-                var monto = Math.Round((decimal)Rng.Next(5, 40) * 1000, 2);
-                var fechaP = fechaHoy.AddDays(-Rng.Next(30, 500));
-                pagos.Add(new PagoCobranza
+                var monto2 = Math.Round((decimal)Rng.Next(5, 30) * 1000, 2);
+                var fechaP = fechaHoy.AddDays(-Rng.Next(30, 400));
+                db.PagosCobranza.Add(new PagoCobranza
                 {
-                    DespachoId = PilotoDespachoId,
-                    CreditoId = c.Id,
+                    DespachoId = d.Id, CreditoId = credito.Id,
                     Fecha = DateOnly.FromDateTime(fechaP),
-                    Monto = monto,
-                    AplicadoCapital = monto * 0.7m,
-                    AplicadoInteres = monto * 0.25m,
-                    AplicadoGastos = monto * 0.05m,
-                    MedioPago = new[] { "Transferencia SPEI", "Depósito ventanilla", "Cheque nominativo" }[Rng.Next(3)],
-                    Referencia = $"REF-{Rng.Next(100000, 999999)}",
+                    Monto = monto2,
+                    AplicadoCapital = monto2 * 0.7m,
+                    AplicadoInteres = monto2 * 0.25m,
+                    AplicadoGastos = monto2 * 0.05m,
+                    MedioPago = "Transferencia SPEI",
                     CreatedBy = "demo",
                     CreatedAt = new DateTimeOffset(fechaP, TimeSpan.Zero)
                 });
             }
+            await db.SaveChangesAsync();
         }
-        db.GestionesCobranza.AddRange(gestiones);
-        db.PagosCobranza.AddRange(pagos);
-        await db.SaveChangesAsync();
+    }
 
-        // --- 6. Plantillas típicas del despacho ---
-        var plantillas = new List<Plantilla>
+    private static async Task SembrarPlantillasAsync(JurisControlDbContext db, DbSeeder.DespachoDemo d)
+    {
+        var plantillas = new[]
         {
             new Plantilla
             {
-                DespachoId = PilotoDespachoId,
-                Clave = "CARTA-COBRO-1",
+                DespachoId = d.Id, Clave = "CARTA-COBRO-1",
                 Nombre = "Carta de cobro extrajudicial",
                 Categoria = "carta",
                 Descripcion = "Requerimiento previo a demanda formal.",
@@ -657,61 +612,49 @@ public static class DemoDataSeeder
 {{NOMBRE_DEL_DEMANDADO}}
 {{DIRECCION_CLIENTE}}
 
-Por medio de la presente, y en representación de {{NOMBRE_CLIENTE}}, nos dirigimos
-a usted para requerirle formalmente el pago del adeudo vencido a la fecha por la
-cantidad de {{CUANTIA_LETRAS}}, correspondiente al asunto {{FOLIO_ASUNTO}}
+Por medio de la presente, y en representación de {{NOMBRE_CLIENTE}}, le requerimos
+formalmente el pago de {{CUANTIA_LETRAS}} correspondiente al asunto {{FOLIO_ASUNTO}}
 del expediente {{NUMERO_EXPEDIENTE}} radicado en el {{JUZGADO}}.
 
-Le concedemos un plazo de diez días hábiles a partir de la fecha de recepción de
-este comunicado para cubrir el adeudo o, en su defecto, comunicarse con este
-despacho para acordar una fórmula de pago.
-
-Vencido dicho plazo sin respuesta favorable, procederemos con las acciones
-legales correspondientes.
+Le concedemos DIEZ DÍAS HÁBILES para cubrir el adeudo. Vencido dicho plazo sin
+respuesta favorable, procederemos con las acciones legales correspondientes.
 
 Atentamente,
-
 {{NOMBRE_ABOGADO}}
 {{NOMBRE_DESPACHO}}",
                 Activa = true, CreatedBy = "demo", CreatedAt = DateTimeOffset.UtcNow
             },
             new Plantilla
             {
-                DespachoId = PilotoDespachoId,
-                Clave = "INFORME-1",
+                DespachoId = d.Id, Clave = "INFORME-1",
                 Nombre = "Informe mensual al cliente",
                 Categoria = "informe",
                 Descripcion = "Reporte de estado del juicio para el cliente.",
                 Cuerpo = @"INFORME DE ESTADO PROCESAL
-
-Fecha del informe: {{FECHA_ACTUAL}}
+Fecha: {{FECHA_ACTUAL}}
 Cliente: {{NOMBRE_CLIENTE}}
 Asunto: {{TITULO_ASUNTO}}
-Folio interno: {{FOLIO_ASUNTO}}
+Folio: {{FOLIO_ASUNTO}}
 Materia: {{MATERIA}}
 Cuantía: {{CUANTIA}}
 
 EXPEDIENTE JUDICIAL
 Número: {{NUMERO_EXPEDIENTE}}
 Juzgado: {{JUZGADO}}
-Tipo de juicio: {{TIPO_JUICIO}}
-Fecha de inicio: {{FECHA_INICIO_JUICIO}}
+Tipo: {{TIPO_JUICIO}}
+Inicio: {{FECHA_INICIO_JUICIO}}
 
 PARTES
 Actor: {{NOMBRE_DEL_ACTOR}}
 Demandado(s): {{NOMBRES_DEMANDADOS}}
 
-Este informe se emite con corte a {{FECHA_ACTUAL_LETRA}}.
-
 Atentamente,
-{{NOMBRE_ABOGADO}}
-{{NOMBRE_DESPACHO}}",
+{{NOMBRE_ABOGADO}}",
                 Activa = true, CreatedBy = "demo", CreatedAt = DateTimeOffset.UtcNow
             },
             new Plantilla
             {
-                DespachoId = PilotoDespachoId,
-                Clave = "ESCRITO-PROMOCION",
+                DespachoId = d.Id, Clave = "ESCRITO-PROMOCION",
                 Nombre = "Encabezado de escrito o promoción",
                 Categoria = "escrito",
                 Descripcion = "Encabezado para presentar cualquier promoción ante el juzgado.",
@@ -722,60 +665,49 @@ PRESENTE.
 juicio {{TIPO_JUICIO}} radicado bajo el expediente {{NUMERO_EXPEDIENTE}}, ante
 Usía con el debido respeto comparezco y expongo:
 
-Que por medio del presente escrito vengo a…
-
 [Contenido de la promoción]
 
-Por lo anteriormente expuesto y fundado, a Usía atentamente pido:
-
-ÚNICO.- Se sirva tener por hechas las manifestaciones anteriores y proveer conforme
-a derecho corresponda.
+Por lo anteriormente expuesto, a Usía atentamente pido:
+ÚNICO.- Se sirva proveer conforme a derecho corresponda.
 
 PROTESTO LO NECESARIO.
-
 {{CIUDAD_ACTUAL}}, a {{FECHA_ACTUAL_LETRA}}.
-
-{{NOMBRE_ABOGADO}}
-Autorizado en autos.",
+{{NOMBRE_ABOGADO}}",
                 Activa = true, CreatedBy = "demo", CreatedAt = DateTimeOffset.UtcNow
             }
         };
         db.Plantillas.AddRange(plantillas);
         await db.SaveChangesAsync();
+    }
 
-        // --- 7. Gastos demo por juicio (5-15 gastos totales) ---
-        var gastos = new List<Gasto>();
+    private static async Task SembrarGastosAsync(
+        JurisControlDbContext db, DbSeeder.DespachoDemo d, List<Juicio> juicios)
+    {
+        var fechaHoy = DateOnly.FromDateTime(DateTime.UtcNow);
         var conceptos = new (string Cat, string Concepto, decimal MinM, decimal MaxM)[]
         {
             ("copias",     "Copias certificadas del expediente", 150, 800),
-            ("copias",     "Fotocopias simples para traslado",     50, 250),
             ("viáticos",   "Traslado a diligencia foránea",       350, 1500),
-            ("perito",     "Honorarios perito grafoscópico",     3500, 8500),
             ("perito",     "Honorarios perito valuador",         5000, 12000),
             ("judiciales", "Depósito para embargo",              1000, 4500),
             ("notariales", "Certificación notarial de documentos", 800, 2500),
             ("honorarios", "Anticipo de honorarios convenio",    5000, 25000)
         };
-        var juiciosParaGasto = juicios.Where(j => j.Estado != EstadoJuicio.Sobreseido).Take(15).ToList();
-        foreach (var j in juiciosParaGasto)
+
+        foreach (var j in juicios.Take(10))
         {
-            var num = Rng.Next(1, 4);
+            var num = Rng.Next(1, 3);
             for (int i = 0; i < num; i++)
             {
                 var c = conceptos[Rng.Next(conceptos.Length)];
                 var monto = (decimal)Rng.Next((int)c.MinM, (int)c.MaxM);
                 var fecha = j.FechaInicio.AddDays(Rng.Next(15, 300));
-                if (fecha > fechaHoyOnly) fecha = fechaHoyOnly.AddDays(-Rng.Next(1, 30));
-                gastos.Add(new Gasto
+                if (fecha > fechaHoy) fecha = fechaHoy.AddDays(-Rng.Next(1, 30));
+                db.Gastos.Add(new Gasto
                 {
-                    DespachoId = PilotoDespachoId,
-                    JuicioId = j.Id,
-                    AsuntoId = j.AsuntoId,
-                    Fecha = fecha,
-                    Categoria = c.Cat,
-                    Concepto = c.Concepto,
-                    Monto = monto,
-                    Reembolsable = c.Cat != "honorarios",
+                    DespachoId = d.Id, JuicioId = j.Id, AsuntoId = j.AsuntoId,
+                    Fecha = fecha, Categoria = c.Cat, Concepto = c.Concepto,
+                    Monto = monto, Reembolsable = c.Cat != "honorarios",
                     Estado = Rng.Next(3) == 0 ? "reembolsado" : "pendiente",
                     Comprobante = $"FAC-{Rng.Next(10000, 99999)}",
                     CreatedBy = "demo",
@@ -783,12 +715,6 @@ Autorizado en autos.",
                 });
             }
         }
-        db.Gastos.AddRange(gastos);
         await db.SaveChangesAsync();
-
-        logger.LogInformation("DemoDataSeeder terminó: {Clientes} clientes, {Asuntos} asuntos, {Juicios} juicios, {Act} actuaciones, {Prom} promociones, {Aud} audiencias, {Plazos} plazos, {Cred} créditos, {Gest} gestiones, {Pag} pagos, {Plant} plantillas, {Gastos} gastos.",
-            clientes.Count, asuntos.Count, juicios.Count, actuaciones.Count,
-            promociones.Count, audiencias.Count, plazos.Count, creditos.Count,
-            gestiones.Count, pagos.Count, plantillas.Count, gastos.Count);
     }
 }
