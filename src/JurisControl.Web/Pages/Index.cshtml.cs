@@ -40,7 +40,13 @@ public class IndexModel : PageModel
     {
         NombreUsuario = User.Identity?.Name ?? "usuario";
 
-        var despacho = await _db.Despachos.AsNoTracking().SingleOrDefaultAsync();
+        // Despachos NO implementa ITenantEntity, así que no lo filtra el Global
+        // Query Filter. Con multi-tenant activo (3 despachos) hay que filtrar
+        // explícitamente por el DespachoId del usuario.
+        var miDespachoId = _tenant.DespachoId;
+        var despacho = miDespachoId.HasValue
+            ? await _db.Despachos.AsNoTracking().FirstOrDefaultAsync(d => d.Id == miDespachoId.Value)
+            : null;
         if (despacho is not null)
         {
             RazonSocial = despacho.RazonSocial;

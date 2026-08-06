@@ -20,7 +20,10 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var d = await _db.Despachos.AsNoTracking().SingleOrDefaultAsync();
+        var miId = _tenant.DespachoId;
+        var d = miId.HasValue
+            ? await _db.Despachos.AsNoTracking().FirstOrDefaultAsync(x => x.Id == miId.Value)
+            : null;
         ModoCobranza = d?.ModoCobranza ?? false;
     }
 }
