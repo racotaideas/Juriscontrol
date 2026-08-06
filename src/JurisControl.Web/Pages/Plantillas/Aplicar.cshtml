@@ -1,0 +1,64 @@
+@page "{id:guid}"
+@model JurisControl.Web.Pages.Plantillas.AplicarModel
+@{
+    ViewData["Title"] = $"Aplicar · {Model.Plantilla.Nombre}";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Plantillas</a> / </span>
+            <h1 class="page-title">Aplicar plantilla: @Model.Plantilla.Nombre</h1>
+            <p class="page-sub">Selecciona el asunto (y opcionalmente el juicio) contra el que se resolverán los tokens.</p>
+        </div>
+        @if (Model.Resultado is not null)
+        {
+            <button onclick="window.print()" class="btn btn-ghost">Imprimir</button>
+        }
+    </div>
+
+    <form method="get" class="filters no-print">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <label>Asunto
+            <select name="asuntoId" onchange="this.form.submit()" class="input" style="min-width: 350px;">
+                <option value="">Selecciona…</option>
+                @foreach (var a in Model.AsuntosList)
+                {
+                    <option value="@a.Value" selected="@(a.Value == Model.AsuntoId?.ToString())">@a.Text</option>
+                }
+            </select>
+        </label>
+        @if (Model.JuiciosList.Any())
+        {
+            <label>Juicio
+                <select name="juicioId" onchange="this.form.submit()" class="input" style="min-width: 300px;">
+                    <option value="">— sin juicio específico —</option>
+                    @foreach (var j in Model.JuiciosList)
+                    {
+                        <option value="@j.Value" selected="@(j.Value == Model.JuicioId?.ToString())">@j.Text</option>
+                    }
+                </select>
+            </label>
+        }
+    </form>
+
+    @if (Model.Resultado is not null)
+    {
+        <div class="card documento-render">
+            <pre style="white-space: pre-wrap; font-family: 'Georgia', serif; font-size: 14px; line-height: 1.6; margin: 0;">@Model.Resultado</pre>
+        </div>
+        <div class="no-print" style="text-align:right; margin-top:8px;">
+            <button onclick="navigator.clipboard.writeText(document.querySelector('.documento-render pre').innerText); this.textContent='✓ Copiado'; setTimeout(()=>this.textContent='Copiar al portapapeles', 2000);" class="btn btn-ghost">Copiar al portapapeles</button>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <p class="muted">Selecciona un asunto arriba para ver el documento generado.</p>
+            <details style="margin-top: 12px;">
+                <summary style="cursor:pointer; color: var(--brand); font-weight: 600;">Ver plantilla original</summary>
+                <pre style="background: var(--surface-2); padding: 12px; border-radius: 6px; overflow-x: auto; font-family: var(--font-mono); font-size: 12px; margin-top: 8px;">@Model.Plantilla.Cuerpo</pre>
+            </details>
+        </div>
+    }
+</section>

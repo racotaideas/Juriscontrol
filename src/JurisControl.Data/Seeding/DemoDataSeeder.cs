@@ -642,8 +642,153 @@ public static class DemoDataSeeder
         db.PagosCobranza.AddRange(pagos);
         await db.SaveChangesAsync();
 
-        logger.LogInformation("DemoDataSeeder terminó: {Clientes} clientes, {Asuntos} asuntos, {Juicios} juicios, {Act} actuaciones, {Prom} promociones, {Aud} audiencias, {Plazos} plazos, {Cred} créditos, {Gest} gestiones, {Pag} pagos.",
+        // --- 6. Plantillas típicas del despacho ---
+        var plantillas = new List<Plantilla>
+        {
+            new Plantilla
+            {
+                DespachoId = PilotoDespachoId,
+                Clave = "CARTA-COBRO-1",
+                Nombre = "Carta de cobro extrajudicial",
+                Categoria = "carta",
+                Descripcion = "Requerimiento previo a demanda formal.",
+                Cuerpo = @"{{CIUDAD_ACTUAL}}, a {{FECHA_ACTUAL_LETRA}}.
+
+{{NOMBRE_DEL_DEMANDADO}}
+{{DIRECCION_CLIENTE}}
+
+Por medio de la presente, y en representación de {{NOMBRE_CLIENTE}}, nos dirigimos
+a usted para requerirle formalmente el pago del adeudo vencido a la fecha por la
+cantidad de {{CUANTIA_LETRAS}}, correspondiente al asunto {{FOLIO_ASUNTO}}
+del expediente {{NUMERO_EXPEDIENTE}} radicado en el {{JUZGADO}}.
+
+Le concedemos un plazo de diez días hábiles a partir de la fecha de recepción de
+este comunicado para cubrir el adeudo o, en su defecto, comunicarse con este
+despacho para acordar una fórmula de pago.
+
+Vencido dicho plazo sin respuesta favorable, procederemos con las acciones
+legales correspondientes.
+
+Atentamente,
+
+{{NOMBRE_ABOGADO}}
+{{NOMBRE_DESPACHO}}",
+                Activa = true, CreatedBy = "demo", CreatedAt = DateTimeOffset.UtcNow
+            },
+            new Plantilla
+            {
+                DespachoId = PilotoDespachoId,
+                Clave = "INFORME-1",
+                Nombre = "Informe mensual al cliente",
+                Categoria = "informe",
+                Descripcion = "Reporte de estado del juicio para el cliente.",
+                Cuerpo = @"INFORME DE ESTADO PROCESAL
+
+Fecha del informe: {{FECHA_ACTUAL}}
+Cliente: {{NOMBRE_CLIENTE}}
+Asunto: {{TITULO_ASUNTO}}
+Folio interno: {{FOLIO_ASUNTO}}
+Materia: {{MATERIA}}
+Cuantía: {{CUANTIA}}
+
+EXPEDIENTE JUDICIAL
+Número: {{NUMERO_EXPEDIENTE}}
+Juzgado: {{JUZGADO}}
+Tipo de juicio: {{TIPO_JUICIO}}
+Fecha de inicio: {{FECHA_INICIO_JUICIO}}
+
+PARTES
+Actor: {{NOMBRE_DEL_ACTOR}}
+Demandado(s): {{NOMBRES_DEMANDADOS}}
+
+Este informe se emite con corte a {{FECHA_ACTUAL_LETRA}}.
+
+Atentamente,
+{{NOMBRE_ABOGADO}}
+{{NOMBRE_DESPACHO}}",
+                Activa = true, CreatedBy = "demo", CreatedAt = DateTimeOffset.UtcNow
+            },
+            new Plantilla
+            {
+                DespachoId = PilotoDespachoId,
+                Clave = "ESCRITO-PROMOCION",
+                Nombre = "Encabezado de escrito o promoción",
+                Categoria = "escrito",
+                Descripcion = "Encabezado para presentar cualquier promoción ante el juzgado.",
+                Cuerpo = @"C. JUEZ {{JUZGADO}}
+PRESENTE.
+
+{{NOMBRE_DEL_ACTOR}}, por mi propio derecho, promoviendo dentro de los autos del
+juicio {{TIPO_JUICIO}} radicado bajo el expediente {{NUMERO_EXPEDIENTE}}, ante
+Usía con el debido respeto comparezco y expongo:
+
+Que por medio del presente escrito vengo a…
+
+[Contenido de la promoción]
+
+Por lo anteriormente expuesto y fundado, a Usía atentamente pido:
+
+ÚNICO.- Se sirva tener por hechas las manifestaciones anteriores y proveer conforme
+a derecho corresponda.
+
+PROTESTO LO NECESARIO.
+
+{{CIUDAD_ACTUAL}}, a {{FECHA_ACTUAL_LETRA}}.
+
+{{NOMBRE_ABOGADO}}
+Autorizado en autos.",
+                Activa = true, CreatedBy = "demo", CreatedAt = DateTimeOffset.UtcNow
+            }
+        };
+        db.Plantillas.AddRange(plantillas);
+        await db.SaveChangesAsync();
+
+        // --- 7. Gastos demo por juicio (5-15 gastos totales) ---
+        var gastos = new List<Gasto>();
+        var conceptos = new (string Cat, string Concepto, decimal MinM, decimal MaxM)[]
+        {
+            ("copias",     "Copias certificadas del expediente", 150, 800),
+            ("copias",     "Fotocopias simples para traslado",     50, 250),
+            ("viáticos",   "Traslado a diligencia foránea",       350, 1500),
+            ("perito",     "Honorarios perito grafoscópico",     3500, 8500),
+            ("perito",     "Honorarios perito valuador",         5000, 12000),
+            ("judiciales", "Depósito para embargo",              1000, 4500),
+            ("notariales", "Certificación notarial de documentos", 800, 2500),
+            ("honorarios", "Anticipo de honorarios convenio",    5000, 25000)
+        };
+        var juiciosParaGasto = juicios.Where(j => j.Estado != EstadoJuicio.Sobreseido).Take(15).ToList();
+        foreach (var j in juiciosParaGasto)
+        {
+            var num = Rng.Next(1, 4);
+            for (int i = 0; i < num; i++)
+            {
+                var c = conceptos[Rng.Next(conceptos.Length)];
+                var monto = (decimal)Rng.Next((int)c.MinM, (int)c.MaxM);
+                var fecha = j.FechaInicio.AddDays(Rng.Next(15, 300));
+                if (fecha > fechaHoyOnly) fecha = fechaHoyOnly.AddDays(-Rng.Next(1, 30));
+                gastos.Add(new Gasto
+                {
+                    DespachoId = PilotoDespachoId,
+                    JuicioId = j.Id,
+                    AsuntoId = j.AsuntoId,
+                    Fecha = fecha,
+                    Categoria = c.Cat,
+                    Concepto = c.Concepto,
+                    Monto = monto,
+                    Reembolsable = c.Cat != "honorarios",
+                    Estado = Rng.Next(3) == 0 ? "reembolsado" : "pendiente",
+                    Comprobante = $"FAC-{Rng.Next(10000, 99999)}",
+                    CreatedBy = "demo",
+                    CreatedAt = new DateTimeOffset(fecha.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero)
+                });
+            }
+        }
+        db.Gastos.AddRange(gastos);
+        await db.SaveChangesAsync();
+
+        logger.LogInformation("DemoDataSeeder terminó: {Clientes} clientes, {Asuntos} asuntos, {Juicios} juicios, {Act} actuaciones, {Prom} promociones, {Aud} audiencias, {Plazos} plazos, {Cred} créditos, {Gest} gestiones, {Pag} pagos, {Plant} plantillas, {Gastos} gastos.",
             clientes.Count, asuntos.Count, juicios.Count, actuaciones.Count,
-            promociones.Count, audiencias.Count, plazos.Count, creditos.Count, gestiones.Count, pagos.Count);
+            promociones.Count, audiencias.Count, plazos.Count, creditos.Count,
+            gestiones.Count, pagos.Count, plantillas.Count, gastos.Count);
     }
 }

@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
                 .AddInterceptors(sp.GetRequiredService<TenantSessionInterceptor>()));
 
         services.AddScoped<IFolioService, FolioService>();
+        services.AddScoped<IPlantillaRenderer, PlantillaRenderer>();
 
         services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
             {

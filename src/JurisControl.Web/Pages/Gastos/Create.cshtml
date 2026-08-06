@@ -1,0 +1,82 @@
+@page
+@model JurisControl.Web.Pages.Gastos.CreateModel
+@{
+    ViewData["Title"] = "Nuevo gasto";
+}
+
+<section class="page page-narrow">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Nuevo gasto</h1>
+        </div>
+        <a asp-page="Index" class="btn btn-ghost">Cancelar</a>
+    </div>
+
+    <form method="post" class="form-grid card">
+        <div asp-validation-summary="ModelOnly" class="alert-danger"></div>
+
+        <div>
+            <label>Asunto (opcional)</label>
+            <select asp-for="Input.AsuntoId" asp-items="Model.AsuntosList" class="input">
+                <option value="">— sin asunto —</option>
+            </select>
+        </div>
+        <div>
+            <label>Juicio (opcional)</label>
+            <select asp-for="Input.JuicioId" asp-items="Model.JuiciosList" class="input">
+                <option value="">— sin juicio —</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Fecha <span class="req">*</span></label>
+            <input asp-for="Input.Fecha" type="date" class="input" />
+        </div>
+        <div>
+            <label>Categoría</label>
+            <select asp-for="Input.Categoria" class="input">
+                @foreach (var c in JurisControl.Web.Pages.Gastos.CreateModel.Categorias) { <option value="@c">@c</option> }
+            </select>
+        </div>
+        <div>
+            <label>Monto (MXN) <span class="req">*</span></label>
+            <input asp-for="Input.Monto" type="number" step="0.01" min="0" class="input" />
+        </div>
+        <div>
+            <label>Estado</label>
+            <select asp-for="Input.Estado" class="input">
+                <option value="pendiente">Pendiente de cobro</option>
+                <option value="reembolsado">Reembolsado</option>
+                <option value="absorbido">Absorbido por el despacho</option>
+            </select>
+        </div>
+
+        <div class="field-full">
+            <label>Concepto <span class="req">*</span></label>
+            <input asp-for="Input.Concepto" class="input" placeholder="Copias certificadas, honorarios perito grafoscópico, etc." />
+        </div>
+
+        <div class="field-full">
+            <label class="checkbox">
+                <input asp-for="Input.Reembolsable" type="checkbox" />
+                <span>El cliente debe reembolsar este gasto</span>
+            </label>
+        </div>
+
+        <div>
+            <label>Comprobante</label>
+            <input asp-for="Input.Comprobante" class="input" placeholder="Núm. de factura, folio de recibo" />
+        </div>
+
+        <div class="field-full">
+            <label>Notas</label>
+            <textarea asp-for="Input.Notas" class="input textarea" rows="2"></textarea>
+        </div>
+
+        <div class="field-full form-actions">
+            <button type="submit" class="btn btn-primary">Guardar gasto</button>
+        </div>
+    </form>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

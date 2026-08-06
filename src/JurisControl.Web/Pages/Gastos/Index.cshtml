@@ -1,0 +1,71 @@
+@page
+@model JurisControl.Web.Pages.Gastos.IndexModel
+@{
+    ViewData["Title"] = "Gastos";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Gastos por expediente</h1>
+            <p class="page-sub">Bitácora de erogaciones del despacho: viáticos, copias, peritos, judiciales, honorarios.</p>
+        </div>
+        <a asp-page="Create" class="btn btn-primary">+ Nuevo gasto</a>
+    </div>
+
+    <section class="cards-row">
+        <article class="metric-card">
+            <div class="metric-label">Total del período</div>
+            <div class="metric-value">@Model.Total.ToString("C0")</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Reembolsable</div>
+            <div class="metric-value">@Model.TotalReembolsable.ToString("C0")</div>
+        </article>
+        <article class="metric-card">
+            <div class="metric-label">Pendientes de cobro</div>
+            <div class="metric-value">@Model.TotalPendiente.ToString("C0")</div>
+        </article>
+    </section>
+
+    <form method="get" class="filters">
+        <input type="search" name="q" value="@Model.Q" placeholder="Concepto, categoría, expediente…" class="input" />
+        <button class="btn btn-ghost">Filtrar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Items.Any())
+        {
+            <div class="empty-state">
+                <p>Sin gastos registrados aún.</p>
+                <a asp-page="Create" class="btn btn-primary">Registrar gasto</a>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead><tr><th>Fecha</th><th>Categoría</th><th>Concepto</th><th>Asunto/Expediente</th><th class="text-right">Monto</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var g in Model.Items)
+                    {
+                        <tr>
+                            <td>@g.Fecha.ToString("yyyy-MM-dd")</td>
+                            <td>@g.Categoria</td>
+                            <td>@g.Concepto</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(g.Expediente)) { <text>Exp @g.Expediente</text> }
+                                else if (!string.IsNullOrWhiteSpace(g.Folio)) { <text>@g.Folio</text> }
+                                else { <text>—</text> }
+                            </td>
+                            <td class="text-right">@g.Monto.ToString("C2")</td>
+                            <td>
+                                <span class="badge @(g.Estado=="pendiente" ? "badge-warning" : g.Estado=="reembolsado" ? "badge-success" : "badge-neutral")">@g.Estado</span>
+                                @if (g.Reembolsable) { <span class="badge badge-info">R</span> }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

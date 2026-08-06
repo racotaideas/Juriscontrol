@@ -101,6 +101,14 @@ CREATE SECURITY POLICY security.TenantIsolationPolicy
 
     ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Remates,
     ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Remates AFTER INSERT,
-    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Remates AFTER UPDATE
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Remates AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plantillas,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plantillas AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Plantillas AFTER UPDATE,
+
+    ADD FILTER PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Gastos,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Gastos AFTER INSERT,
+    ADD BLOCK  PREDICATE security.fn_TenantAccessPredicate(DespachoId) ON dbo.Gastos AFTER UPDATE
 WITH (STATE = ON);
 GO

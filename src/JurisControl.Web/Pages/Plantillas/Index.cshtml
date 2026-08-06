@@ -1,0 +1,49 @@
+@page
+@model JurisControl.Web.Pages.Plantillas.IndexModel
+@{
+    ViewData["Title"] = "Plantillas";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Plantillas (Machotes)</h1>
+            <p class="page-sub">Escritos y cartas con tokens que se rellenan automáticamente contra un asunto o juicio.</p>
+        </div>
+        <a asp-page="Create" class="btn btn-primary">+ Nueva plantilla</a>
+    </div>
+
+    <form method="get" class="filters">
+        <input type="search" name="q" value="@Model.Q" placeholder="Clave, nombre o categoría…" class="input" />
+        <button class="btn btn-ghost">Filtrar</button>
+    </form>
+
+    <div class="card">
+        @if (!Model.Items.Any())
+        {
+            <div class="empty-state">
+                <p>Aún no hay plantillas. Crea una para ahorrar tiempo redactando escritos.</p>
+                <a asp-page="Create" class="btn btn-primary">Nueva plantilla</a>
+            </div>
+        }
+        else
+        {
+            <table class="table">
+                <thead><tr><th>Clave</th><th>Nombre</th><th>Categoría</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var p in Model.Items)
+                    {
+                        <tr>
+                            <td><a asp-page="Edit" asp-route-id="@p.Id" class="link-primary">@p.Clave</a></td>
+                            <td>@p.Nombre</td>
+                            <td>@p.Categoria</td>
+                            <td class="row-actions">
+                                <a asp-page="Aplicar" asp-route-id="@p.Id" class="link">Aplicar a…</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</section>

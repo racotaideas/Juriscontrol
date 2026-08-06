@@ -40,6 +40,8 @@ public class JurisControlDbContext
     public DbSet<PagoCobranza> PagosCobranza => Set<PagoCobranza>();
     public DbSet<GestionCobranza> GestionesCobranza => Set<GestionCobranza>();
     public DbSet<Remate> Remates => Set<Remate>();
+    public DbSet<Plantilla> Plantillas => Set<Plantilla>();
+    public DbSet<Gasto> Gastos => Set<Gasto>();
 
     private bool CurrentIsPlatformScope() => _tenant.IsPlatformScope;
 

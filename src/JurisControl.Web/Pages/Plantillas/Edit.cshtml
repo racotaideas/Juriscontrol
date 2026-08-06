@@ -1,0 +1,64 @@
+@page "{id:guid}"
+@model JurisControl.Web.Pages.Plantillas.EditModel
+@{
+    ViewData["Title"] = $"Editar plantilla · {Model.Input.Nombre}";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <span class="crumb"><a asp-page="Index">Plantillas</a> / </span>
+            <h1 class="page-title">Editar plantilla</h1>
+        </div>
+        <a asp-page="Index" class="btn btn-ghost">Cancelar</a>
+    </div>
+
+    <div class="grid-2">
+        <form method="post" class="form-grid card">
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="alert-danger"></div>
+            <div>
+                <label>Clave</label>
+                <input asp-for="Input.Clave" class="input" />
+            </div>
+            <div>
+                <label>Categoría</label>
+                <input asp-for="Input.Categoria" class="input" />
+            </div>
+            <div class="field-full">
+                <label>Nombre</label>
+                <input asp-for="Input.Nombre" class="input" />
+            </div>
+            <div class="field-full">
+                <label>Descripción</label>
+                <input asp-for="Input.Descripcion" class="input" />
+            </div>
+            <div class="field-full">
+                <label>Cuerpo</label>
+                <textarea asp-for="Input.Cuerpo" class="input textarea" rows="20" style="font-family:var(--font-mono); font-size:13px;"></textarea>
+            </div>
+            <div class="field-full form-actions between">
+                <button type="submit" asp-page-handler="Delete" class="btn btn-danger" onclick="return confirm('¿Desactivar esta plantilla?');">Desactivar</button>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+
+        <div class="card">
+            <h3>Tokens disponibles</h3>
+            <ul class="line-list" style="max-height: 600px; overflow-y: auto;">
+                @foreach (var t in Model.TokensDisponibles)
+                {
+                    <li>
+                        <code onclick="navigator.clipboard.writeText('{{@t.Token}}');this.classList.add('copied');setTimeout(()=>this.classList.remove('copied'),800);"
+                              style="cursor:pointer; background:var(--surface-2); padding:2px 6px; border-radius:4px; font-family:var(--font-mono); font-size:12px;">
+                            @($"{{{{{t.Token}}}}}")
+                        </code>
+                        <div class="muted" style="font-size:12px;">@t.Descripcion</div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</section>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
