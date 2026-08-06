@@ -25,13 +25,18 @@ public class DocumentoConfiguration : IEntityTypeConfiguration<Documento>
             .HasForeignKey(x => x.AsuntoId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // NoAction en lugar de SetNull para evitar SQL Server error 1785
+        // ("multiple cascade paths"): Documentos ya cascadea con Cliente/Asunto
+        // y Actuacion/Promocion también llegan a Cliente por otro camino.
+        // Con NoAction se corta el ciclo; borrar una Actuacion/Promocion no
+        // toca la fila de Documentos (queda con FK huérfana, no visible en UI).
         b.HasOne(x => x.Actuacion).WithMany()
             .HasForeignKey(x => x.ActuacionId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         b.HasOne(x => x.Promocion).WithMany()
             .HasForeignKey(x => x.PromocionId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         b.Property(x => x.Nombre).HasMaxLength(300).IsRequired();
         b.Property(x => x.Categoria).HasMaxLength(50).IsRequired();

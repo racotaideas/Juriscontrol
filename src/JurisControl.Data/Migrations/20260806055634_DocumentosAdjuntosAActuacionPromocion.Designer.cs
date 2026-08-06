@@ -1614,7 +1614,7 @@ namespace JurisControl.Data.Migrations
                     b.HasOne("JurisControl.Domain.Entities.Actuacion", "Actuacion")
                         .WithMany()
                         .HasForeignKey("ActuacionId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("JurisControl.Domain.Entities.Asunto", "Asunto")
                         .WithMany()
@@ -1635,7 +1635,7 @@ namespace JurisControl.Data.Migrations
                     b.HasOne("JurisControl.Domain.Entities.Promocion", "Promocion")
                         .WithMany()
                         .HasForeignKey("PromocionId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Actuacion");
 
