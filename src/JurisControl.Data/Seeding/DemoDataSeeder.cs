@@ -80,6 +80,16 @@ public static class DemoDataSeeder
         ("Cobro de Crédito Bancario", Materia.Cobranza,  "Recuperación de crédito con garantía hipotecaria.")
     };
 
+    // Tamaños distintivos por despacho para que sea obvio de un vistazo
+    // en qué tenant está el usuario logueado. Rafael = grande + featured;
+    // Bufete = pequeño; Reforma = grande (cobranza masiva).
+    private static readonly Dictionary<Guid, (int Clientes, int AsuntosDeFondo)> TamañosPorDespacho = new()
+    {
+        [Guid.Parse("00000000-0000-0000-0000-000000000001")] = (30, 30), // Rafael (+ 6 featured = 36 asuntos)
+        [Guid.Parse("00000000-0000-0000-0000-000000000002")] = (15, 15), // Bufete Álvarez (chico)
+        [Guid.Parse("00000000-0000-0000-0000-000000000003")] = (60, 75)  // Corporativo Reforma (grande)
+    };
+
     public static async Task SeedAsync(IServiceProvider services, IConfiguration config)
     {
         if (!config.GetValue<bool>("DemoData:Enabled")) return;
@@ -96,15 +106,47 @@ public static class DemoDataSeeder
         foreach (var d in DbSeeder.Despachos)
         {
             var yaHay = await db.Asuntos.IgnoreQueryFilters().CountAsync(a => a.DespachoId == d.Id);
+            var esRafael = d.Id == DbSeeder.Despachos[0].Id;
+            var yaTieneFeatured = esRafael && await db.Asuntos.IgnoreQueryFilters()
+                .AnyAsync(a => a.DespachoId == d.Id && a.Etiquetas.Contains("featured"));
+
             if (yaHay >= 20)
             {
-                logger.LogInformation("DemoDataSeeder skip despacho {D}: ya hay {N} asuntos.", d.RazonSocial, yaHay);
+                // Solo sembramos casos featured en Rafael si aún no los tiene.
+                if (esRafael && !yaTieneFeatured)
+                {
+                    logger.LogInformation("DemoDataSeeder: agregando 6 casos featured a '{D}' (ya tiene {N} asuntos).", d.RazonSocial, yaHay);
+                    await SembrarSoloFeaturedAsync(db, d, logger);
+                }
+                else
+                {
+                    logger.LogInformation("DemoDataSeeder skip despacho {D}: ya hay {N} asuntos.", d.RazonSocial, yaHay);
+                }
                 continue;
             }
 
             logger.LogInformation("DemoDataSeeder sembrando despacho '{D}'…", d.RazonSocial);
             await SembrarDespachoAsync(db, d, logger);
         }
+    }
+
+    // Siembra solo los 6 casos featured en un despacho que ya tiene datos.
+    // Reutiliza clientes existentes y contadores existentes.
+    private static async Task SembrarSoloFeaturedAsync(
+        JurisControlDbContext db, DbSeeder.DespachoDemo d, ILogger logger)
+    {
+        var clientes = await db.Clientes.IgnoreQueryFilters()
+            .Where(c => c.DespachoId == d.Id && c.Activo).ToListAsync();
+        var usuarios = await db.Users.IgnoreQueryFilters()
+            .Where(u => u.DespachoId == d.Id && u.Activo).ToListAsync();
+        if (clientes.Count == 0)
+        {
+            logger.LogWarning("No hay clientes en '{D}' para asignar los casos featured; skip.", d.RazonSocial);
+            return;
+        }
+        var contador2025 = await EnsureContadorAsync(db, d.Id, 2025);
+        var contador2026 = await EnsureContadorAsync(db, d.Id, 2026);
+        await SembrarCasosFeaturedAsync(db, d, clientes, usuarios, contador2025, contador2026, logger);
     }
 
     private static async Task SembrarDespachoAsync(
@@ -115,9 +157,16 @@ public static class DemoDataSeeder
             .Where(u => u.DespachoId == d.Id && u.Activo)
             .ToListAsync();
 
+        // Tamaño diferenciado por despacho para que sea obvio en la UI cuál está viendo el usuario.
+        var (totalClientes, totalAsuntosFondo) = TamañosPorDespacho.TryGetValue(d.Id, out var t)
+            ? t
+            : (30, 30);
+        var clientesFisicas = totalClientes * 2 / 3;
+        var clientesMorales = totalClientes - clientesFisicas;
+
         // --- 1. Clientes ---
         var clientes = new List<Cliente>();
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < clientesFisicas; i++)
         {
             var esHombre = Rng.Next(2) == 0;
             var nombre = esHombre ? NombresHombres[Rng.Next(NombresHombres.Length)]
@@ -140,7 +189,7 @@ public static class DemoDataSeeder
                 CreatedAt = DateTimeOffset.UtcNow.AddMonths(-Rng.Next(1, 18))
             });
         }
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < clientesMorales; i++)
         {
             var razon = Empresas[i % Empresas.Length];
             clientes.Add(new Cliente
@@ -179,7 +228,7 @@ public static class DemoDataSeeder
         // --- 3. Asuntos "de fondo" para dar volumen ---
         var (asuntos, juicios, actuaciones, promociones, audiencias, plazos) =
             await GenerarAsuntosDeFondoAsync(db, d, clientesGuardados, usuarios,
-                contador2025, contador2026);
+                contador2025, contador2026, totalAsuntosFondo);
 
         // --- 4. Cobranza (solo si el despacho tiene modo cobranza) ---
         if (d.ModoCobranza)
@@ -345,7 +394,8 @@ public static class DemoDataSeeder
         GenerarAsuntosDeFondoAsync(
             JurisControlDbContext db, DbSeeder.DespachoDemo d,
             List<Cliente> clientes, List<ApplicationUser> usuarios,
-            ContadorFolio contador2025, ContadorFolio contador2026)
+            ContadorFolio contador2025, ContadorFolio contador2026,
+            int totalAsuntos)
     {
         var estadosAsuntoDist = new[]
         {
@@ -369,7 +419,6 @@ public static class DemoDataSeeder
         var plazos = new List<Plazo>();
 
         var fechaHoy = DateTime.UtcNow.Date;
-        var totalAsuntos = 30;
 
         for (int i = 0; i < totalAsuntos; i++)
         {

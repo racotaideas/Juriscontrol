@@ -1,0 +1,103 @@
+@page
+@model JurisControl.Web.Pages.Diagnostico.IndexModel
+@{
+    ViewData["Title"] = "Diagnóstico multi-tenant";
+}
+
+<section class="page">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Diagnóstico multi-tenant</h1>
+            <p class="page-sub">Prueba de aislamiento de datos entre despachos. Todos los conteos están filtrados por el <b>DespachoId</b> del usuario logueado, en dos capas independientes: EF Core Global Query Filter + SQL Server Row Level Security.</p>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Sesión activa</h3>
+            <dl class="def-list">
+                <dt>Correo</dt><dd>@Model.Email</dd>
+                <dt>Claim <code>despacho_id</code></dt><dd><code>@Model.DespachoIdClaim</code></dd>
+                <dt>Tenant en contexto</dt><dd><code>@(Model.DespachoIdEnContexto?.ToString() ?? "—")</code></dd>
+                <dt>Modo plataforma</dt><dd>@(Model.EsPlatformScope ? "SÍ (peligroso — solo seed)" : "no")</dd>
+            </dl>
+        </div>
+
+        <div class="card">
+            <h3>Despacho visible</h3>
+            @if (Model.Despacho is null)
+            {
+                <p class="muted">No hay despacho en contexto (¿la sesión no lleva claim?).</p>
+            }
+            else
+            {
+                <dl class="def-list">
+                    <dt>Razón social</dt><dd><b>@Model.Despacho.RazonSocial</b></dd>
+                    <dt>Materias</dt><dd>@Model.Despacho.MateriasAtiende</dd>
+                    <dt>Modo cobranza</dt><dd>@(Model.Despacho.ModoCobranza ? "activo" : "no")</dd>
+                    <dt>Alta</dt><dd>@Model.Despacho.FechaAlta.LocalDateTime.ToString("yyyy-MM-dd")</dd>
+                </dl>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Conteos visibles para este usuario</h3>
+        <p class="muted">Si al cambiar de cuenta los números cambian, la separación funciona. Si se ven iguales o mezclados, hay una fuga.</p>
+        <div class="cards-row">
+            <article class="metric-card"><div class="metric-label">Clientes</div><div class="metric-value">@Model.Clientes</div></article>
+            <article class="metric-card"><div class="metric-label">Asuntos</div><div class="metric-value">@Model.Asuntos</div></article>
+            <article class="metric-card"><div class="metric-label">Juicios</div><div class="metric-value">@Model.Juicios</div></article>
+            <article class="metric-card"><div class="metric-label">Actuaciones</div><div class="metric-value">@Model.Actuaciones</div></article>
+            <article class="metric-card"><div class="metric-label">Promociones</div><div class="metric-value">@Model.Promociones</div></article>
+            <article class="metric-card"><div class="metric-label">Audiencias</div><div class="metric-value">@Model.Audiencias</div></article>
+            <article class="metric-card"><div class="metric-label">Plazos</div><div class="metric-value">@Model.Plazos</div></article>
+            <article class="metric-card"><div class="metric-label">Documentos</div><div class="metric-value">@Model.Documentos</div></article>
+            <article class="metric-card"><div class="metric-label">Créditos</div><div class="metric-value">@Model.Creditos</div></article>
+            <article class="metric-card"><div class="metric-label">Plantillas</div><div class="metric-value">@Model.Plantillas</div></article>
+            <article class="metric-card"><div class="metric-label">Gastos</div><div class="metric-value">@Model.Gastos</div></article>
+            <article class="metric-card"><div class="metric-label">Usuarios del despacho</div><div class="metric-value">@Model.Usuarios</div></article>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <div class="card">
+            <h3>Últimos 5 folios visibles</h3>
+            @if (!Model.UltimosFolios.Any())
+            {
+                <p class="muted">Sin asuntos.</p>
+            }
+            else
+            {
+                <ul class="line-list">
+                    @foreach (var f in Model.UltimosFolios)
+                    { <li><code>@f.Folio</code> · @f.Titulo</li> }
+                </ul>
+            }
+        </div>
+        <div class="card">
+            <h3>Últimos 5 expedientes visibles</h3>
+            @if (!Model.UltimosExpedientes.Any())
+            {
+                <p class="muted">Sin juicios.</p>
+            }
+            else
+            {
+                <ul class="line-list">
+                    @foreach (var e in Model.UltimosExpedientes)
+                    { <li><code>@e.Expediente</code> · @e.Juzgado</li> }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Cómo funciona el aislamiento (3 candados)</h3>
+        <ol class="def-list" style="display:block;">
+            <li><b>Cookie de sesión</b> firma un claim <code>despacho_id</code> emitido al login por <code>DespachoUserClaimsPrincipalFactory</code>. Sin cookie no hay claim; con cookie de otro usuario el claim es otro.</li>
+            <li><b>EF Core Global Query Filter</b>: cada consulta LINQ sobre una entidad <code>ITenantEntity</code> se envuelve automáticamente con <code>WHERE DespachoId = @@tenant</code>. Aplica aunque el programador olvide filtrar a mano.</li>
+            <li><b>SQL Server Row Level Security</b>: la política <code>TenantIsolationPolicy</code> con FILTER + BLOCK PREDICATE se aplica en el motor SQL, usando <code>SESSION_CONTEXT('TenantId')</code>. Aunque alguien consulte con SQL crudo o EF con <code>IgnoreQueryFilters()</code>, la base sigue filtrando.</li>
+        </ol>
+        <p class="muted" style="margin-top:8px;">Los 3 candados operan en capas distintas: si uno falla, los otros dos siguen conteniendo la fuga.</p>
+    </div>
+</section>
